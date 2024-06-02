@@ -1,4 +1,4 @@
-# Score Attack Plugin
+# Score Attack Offline Plugin
 
 This plugin is built off [CommonAPI](https://github.com/LazyDuchess/BRC-CommonAPI) and [CommonAPI-Sample](https://github.com/LazyDuchess/BRC-CommonAPI-Sample). I take absolutely no credit for the work.
 
@@ -7,4 +7,4 @@ Special thanks to NotNite, Yuri, and SpecialFX for inspiration, programming, and
 
 ## Building
 
-Make sure you have a `BRCPath` environment variable defined on your system, which points to the root folder of your Bomb Rush Cyberfunk installation. This way the project can find the required DLLs.
+This requires [CommonAPI](https://github.com/LazyDuchess/BRC-CommonAPI). Make sure you put that in your 'libs' folder in the directory you have your files. Make sure you have a `BRCPath` environment variable defined on your system, which points to the root folder of your Bomb Rush Cyberfunk installation as well. This way the project can find the required DLLs.
