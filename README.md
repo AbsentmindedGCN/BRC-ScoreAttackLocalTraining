@@ -1,4 +1,4 @@
-# Score Attack Offline Plugin
+# Score Attack Utilities, Conveniences, & Extras
  
 This plugin is built off [CommonAPI](https://github.com/LazyDuchess/BRC-CommonAPI) and [CommonAPI-Sample](https://github.com/LazyDuchess/BRC-CommonAPI-Sample). I take absolutely no credit for the work.
 
