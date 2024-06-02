@@ -1,6 +1,7 @@
 # Score Attack Plugin
 
-This is an example project built off [CommonAPI](https://github.com/LazyDuchess/BRC-CommonAPI) and [CommonAPI-Sample](https://github.com/LazyDuchess/BRC-CommonAPI-Sample). I take absolutely no credit for the work.
+This plugin is built off [CommonAPI](https://github.com/LazyDuchess/BRC-CommonAPI) and [CommonAPI-Sample](https://github.com/LazyDuchess/BRC-CommonAPI-Sample). I take absolutely no credit for the work.
+Special thanks to NotNite, Yuri, and SpecialFX for inspiration, programming, and testing.
 
 
 ## Building
