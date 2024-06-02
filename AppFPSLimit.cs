@@ -135,18 +135,5 @@ namespace ScoreAttack
             ScoreAttackSaveData.Instance.TargetFrameRate = frameRate; // Save target frame rate
         }
 
-        /*
-        void Update()
-        {
-            // Check if target frame rate has changed
-            if (Application.targetFrameRate != CurrentFps)
-            {
-                CurrentFps = Application.targetFrameRate; // Update CurrentFps to new target frame rate
-                Debug.Log("New target frame rate: " + CurrentFps);
-            }
-
-        }
-        */
-
     }
 }

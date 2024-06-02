@@ -68,7 +68,7 @@ namespace ScoreAttack
             button = PhoneUIUtility.CreateSimpleButton("Go to Stage...");
             button.OnConfirm += () => {
                 // Launch our stage select app.
-                MyPhone.OpenApp(typeof(AppStageSelect));
+                MyPhone.OpenApp(typeof(AppScoreAttackStageSelect));
             };
             ScrollView.AddButton(button);
 

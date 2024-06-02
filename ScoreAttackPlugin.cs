@@ -17,7 +17,7 @@ namespace ScoreAttack
             // Create the singleton for our custom save data.
             new ScoreAttackSaveData();
             AppScoreAttackOffline.Initialize();
-            AppStageSelect.Initialize();
+            AppScoreAttackStageSelect.Initialize();
             AppScoreAttack.Initialize();
             AppFPSLimit.Initialize();
             ScoreAttackManager.Initialize();
