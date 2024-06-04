@@ -234,7 +234,7 @@ namespace ScoreAttack
 
                 gameplay.totalScoreLabel.text = FormattingUtility.FormatPlayerScore(cultureInfo, ScoreGot);
                 gameplay.targetScoreTitleLabel.text = "Personal Best:";
-                gameplay.totalScoreTitleLabel.text = "Score:";
+                gameplay.totalScoreTitleLabel.text = (timeLimit/60)+" "+"Min."+" "+"Score:";
             }
         }
 
