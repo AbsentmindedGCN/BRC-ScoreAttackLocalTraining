@@ -63,7 +63,12 @@ namespace ScoreAttack
             // Initialize currentStage with the current stage
             currentStage = Core.Instance.BaseModule.CurrentStage;
 
+            // Remove Grind Debt
             player.grindAbility.trickTimer = 0f;
+
+            // Refresh Stale Moves
+            //player.RefreshAirTricks();
+            player.RefreshAllDegrade();
 
             // Set battle as active
             isScoreAttackActive = true;
