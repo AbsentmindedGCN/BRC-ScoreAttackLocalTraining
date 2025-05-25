@@ -18,6 +18,16 @@ namespace ScoreAttack
         //private readonly Dictionary<Stage, float> personalBests = new Dictionary<Stage, float>();
         public Dictionary<Stage, PersonalBest> PersonalBestByStage = [];
 
+        // Grind Debt Timer Visible
+        public bool GrindDebtTimerVisible { get; set; }
+
+        // Grind Debt Display Mode
+        public GrindDebtDisplayMode GrindDebtViewerMode = GrindDebtDisplayMode.Disabled; // Default to Disabled
+        public GrindDebtColorMode GrindDebtColorMode = GrindDebtColorMode.Flashing; // Default to Flashing
+
+        // Extra Modes
+        public SFXToggle ExtraSFXMode = SFXToggle.Default; // Default to no custom SFX
+
         public class PersonalBest
         {
             public Dictionary<float, float> PersonalBestByTimeLimit = [];
@@ -131,6 +141,46 @@ namespace ScoreAttack
                 Application.targetFrameRate = TargetFrameRate;
             }
 
+            // Read GrindDebtTimerVisible if it exists
+            if (reader.BaseStream.Position < reader.BaseStream.Length)
+            {
+                GrindDebtTimerVisible = reader.ReadBoolean();
+            }
+            else
+            {
+                GrindDebtTimerVisible = false; // default
+            }
+
+            // Read GrindDebtViewerMode (Default to Disabled if not found)
+            if (reader.BaseStream.Position < reader.BaseStream.Length)
+            {
+                GrindDebtViewerMode = (GrindDebtDisplayMode)reader.ReadInt32();
+            }
+            else
+            {
+                GrindDebtViewerMode = GrindDebtDisplayMode.Disabled; // default
+            }
+
+            // Read GrindDebtColorMode (Default to Flashing if not found)
+            if (reader.BaseStream.Position < reader.BaseStream.Length)
+            {
+                GrindDebtColorMode = (GrindDebtColorMode)reader.ReadInt32();
+            }
+            else
+            {
+                GrindDebtColorMode = GrindDebtColorMode.Flashing; // default
+            }
+
+            // Read ExtraSFXMode (Default to No SFX if not found)
+            if (reader.BaseStream.Position < reader.BaseStream.Length)
+            {
+                ExtraSFXMode = (SFXToggle)reader.ReadInt32();
+            }
+            else
+            {
+                ExtraSFXMode = SFXToggle.Default; // default
+            }
+
         }
 
         public override void Write(BinaryWriter writer)
@@ -172,6 +222,18 @@ namespace ScoreAttack
 
             // Save current frame rate
             writer.Write(TargetFrameRate);
+
+            // Save user Grind Debt Display preference
+            writer.Write(GrindDebtTimerVisible);
+
+            // Save GrindDebtViewerMode
+            writer.Write((int)GrindDebtViewerMode);
+
+            // Save GrindDebtColorMode
+            writer.Write((int)GrindDebtColorMode);
+
+            // Save Extra Toggles
+            writer.Write((int)ExtraSFXMode);
         }
     }
 }

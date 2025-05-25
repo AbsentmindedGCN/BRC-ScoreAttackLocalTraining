@@ -21,7 +21,7 @@ namespace ScoreAttack
         private PhoneButton goToRespawnButton = null;
         private WantedManager wantedManager;
 
-        public readonly Sprite EncounterIcon = TextureUtility.LoadSprite("encounter.png"); // 128x128
+        //public readonly Sprite EncounterIcon = TextureUtility.LoadSprite("encounter.png"); // 128x128
 
         // This phone app allows the player to select between 3, 5, or 10 minute timed score attack sessions
         public static void Initialize()
@@ -180,8 +180,8 @@ namespace ScoreAttack
                 }
 
             };  
-            button.LabelUnselectedColor = Color.black;
-            button.LabelSelectedColor = Color.red;
+            button.LabelUnselectedColor = UnityEngine.Color.black;
+            button.LabelSelectedColor = UnityEngine.Color.red;
             ScrollView.AddButton(button);
 
             button = PhoneUIUtility.CreateSimpleButton("Erase All Your Personal Bests");
@@ -211,8 +211,8 @@ namespace ScoreAttack
                 }
 
             };
-            button.LabelUnselectedColor = Color.black;
-            button.LabelSelectedColor = Color.red;
+            button.LabelUnselectedColor = UnityEngine.Color.black;
+            button.LabelSelectedColor = UnityEngine.Color.red;
             ScrollView.AddButton(button);
 
         }

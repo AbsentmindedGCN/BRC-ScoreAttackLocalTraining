@@ -22,6 +22,8 @@ namespace ScoreAttack
             AppFPSLimit.Initialize();
             ScoreAttackManager.Initialize();
             AppMoveStyle.Initialize();
+            AppGrindDebt.Initialize();
+            AppExtras.Initialize();
             //AppPolice.Initialize(); - No longer needed
 
             // Patch Player, Phone, and NPCs so cops can spawn during battles, taxi appears, and more!

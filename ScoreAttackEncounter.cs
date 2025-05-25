@@ -13,6 +13,7 @@ using System.Diagnostics.PerformanceData;
 using UnityEngine.SocialPlatforms.Impl;
 using System.Globalization;
 using UnityEngine.Events;
+using System.Collections;
 
 namespace ScoreAttack
 {
@@ -40,6 +41,92 @@ namespace ScoreAttack
 
         //private float initialScore = 0.0f;
 
+        private bool playCustomSounds = false; // default to false
+
+        // SFX
+        private AudioClip announcerThree;
+        private AudioClip announcerTwo;
+        private AudioClip announcerOne;
+        private AudioClip announcerStart;
+        private AudioClip announcerEnd;
+        private AudioClip announcerBest;
+        private AudioSource audioSource;
+        private bool announcerReady = false;
+        private bool hasPlayedThree = false;
+        private bool hasPlayedTwo = false;
+        private bool hasPlayedOne = false;
+        private bool hasPlayedStart = false;
+        private bool hasPlayedEnd = false;
+        private bool hasPlayedBest = false;
+
+        private IEnumerator LoadAnnouncerClips()
+        {
+            string pluginPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+
+            if (AppExtras.SFXMode == SFXToggle.LLB)
+            {
+                yield return LoadOgg(Path.Combine(pluginPath, "sfx/announcer_three.ogg"), clip => announcerThree = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "sfx/announcer_two.ogg"), clip => announcerTwo = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "sfx/announcer_one.ogg"), clip => announcerOne = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "sfx/lobby_start_game.ogg"), clip => announcerStart = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "sfx/announcer_time_up.ogg"), clip => announcerEnd = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "sfx/express.ogg"), clip => announcerBest = clip);
+            }
+            else if (AppExtras.SFXMode == SFXToggle.FZero)
+            {
+                yield return LoadOgg(Path.Combine(pluginPath, "fzero/fzero_three.ogg"), clip => announcerThree = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "fzero/fzero_two.ogg"), clip => announcerTwo = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "fzero/fzero_one.ogg"), clip => announcerOne = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "fzero/fzero_go.ogg"), clip => announcerStart = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "fzero/fzero_finish.ogg"), clip => announcerEnd = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "fzero/fzero_courserecord.ogg"), clip => announcerBest = clip);
+                //yield return LoadOgg(Path.Combine(pluginPath, "fzero/fzero_goal.ogg"), clip => announcerBest = clip);
+            }
+            else
+            {
+                // Just play LLB or something
+                yield return LoadOgg(Path.Combine(pluginPath, "sfx/announcer_three.ogg"), clip => announcerThree = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "sfx/announcer_two.ogg"), clip => announcerTwo = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "sfx/announcer_one.ogg"), clip => announcerOne = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "sfx/lobby_start_game.ogg"), clip => announcerStart = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "sfx/announcer_time_up.ogg"), clip => announcerEnd = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "sfx/express.ogg"), clip => announcerBest = clip);
+            }
+
+                if (audioSource == null)
+            {
+                GameObject go = new GameObject("AnnouncerAudioSource");
+                audioSource = go.AddComponent<AudioSource>();
+                UnityEngine.Object.DontDestroyOnLoad(go);
+            }
+
+            announcerReady = true;
+        }
+
+        private IEnumerator LoadOgg(string filePath, Action<AudioClip> onLoaded)
+        {
+            var uri = new System.Uri(filePath).AbsoluteUri;
+            using (UnityEngine.Networking.UnityWebRequest www = UnityEngine.Networking.UnityWebRequestMultimedia.GetAudioClip(uri, AudioType.OGGVORBIS))
+            {
+                yield return www.SendWebRequest();
+
+                if (www.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
+                {
+                    Debug.LogError("Error loading OGG: " + www.error);
+                }
+                else
+                {
+                    AudioClip clip = UnityEngine.Networking.DownloadHandlerAudioClip.GetContent(www);
+                    onLoaded?.Invoke(clip);
+                }
+            }
+        }
+
+        public void SetPlayOggSounds(bool value)
+        {
+            playCustomSounds = value;
+        }
+
         public override void InitSceneObject()
         {
             cultureInfo = CultureInfo.CurrentCulture;
@@ -60,6 +147,10 @@ namespace ScoreAttack
         // Start Score Battle and Refresh the Stuff
         public override void StartMainEvent()
         {
+
+            // Sync settings with whatever the player chose in AppExtras
+            SetPlayOggSounds(AppExtras.SFXMode != SFXToggle.Default);
+
             // Initialize currentStage with the current stage
             currentStage = Core.Instance.BaseModule.CurrentStage;
 
@@ -94,10 +185,15 @@ namespace ScoreAttack
 
             // Call base StartMainEvent
             base.StartMainEvent();
+
+            // Load SFX
+            Core.Instance.StartCoroutine(LoadAnnouncerClips());
+            hasPlayedThree = hasPlayedTwo = hasPlayedOne = false;
+
         }
 
-        
-        
+
+
         // Update Score as the player gets it
         public override void UpdateMainEvent()
         {
@@ -105,17 +201,90 @@ namespace ScoreAttack
             // Update the personal best score if the current score is higher
             float currentScore = ScoreGot;
 
+
             if (player.IsBusyWithSequence())
                 return;
 
+            /*
+            if (player.IsBusyWithSequence())
+            {
+                this.timeLimitTimer -= Core.dt;
+            }
+            */
+
             if (!isCountdownFinished)
             {
+                if (!announcerReady)
+                {
+                    Debug.Log("Announcer loading...");
+                    return;
+                }
+
                 // Countdown logic
                 countdownTimer -= Core.dt;
                 //var text = NiceTimerString(countdownTimer);
                 var text = Mathf.CeilToInt(countdownTimer).ToString(); // Display only 3, 2, 1
                 GameplayUI gameplay = Core.Instance.UIManager.gameplay;
                 gameplay.timeLimitLabel.text = text + "...";
+
+                if (playCustomSounds)
+                {
+                    if (Mathf.CeilToInt(countdownTimer) == 3 && !hasPlayedThree)
+                    {
+                        if (AppExtras.SFXMode == SFXToggle.LLB || AppExtras.SFXMode == SFXToggle.FZero)
+                        {
+                            player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerThree, player.AudioManager.audioSources[3], 0f);
+
+                            //player.AudioManager.PlayOneShotSfx(Reptile.AudioManager.mixerGroups[3], announcerThree, Reptile.AudioManager.audioSources[3], 0f);
+                            //float sfxVolume = Core.Instance.AudioManager.SfxVolume;
+                            //audioSource?.PlayOneShot(announcerThree, sfxVolume * 0.5f);
+                        }
+                        else
+                        {
+                            player.AudioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.jump_special, player.playerOneShotAudioSource, 0f);
+                            //Core.Instance.audioManager.PlaySfxGameplay(SfxCollectionID.PhoneSfx, AudioClipID.FlipPhone_Select);
+                            //player.audioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.siren,
+                            //player.playerOneShotAudioSource, 0f);
+                        }
+
+                        hasPlayedThree = true;
+                    }
+                    else if (Mathf.CeilToInt(countdownTimer) == 2 && !hasPlayedTwo)
+                    {
+                        if (AppExtras.SFXMode == SFXToggle.LLB || AppExtras.SFXMode == SFXToggle.FZero)
+                        {
+                            player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerTwo, player.AudioManager.audioSources[3], 0f);
+                            //float sfxVolume = Core.Instance.AudioManager.SfxVolume;
+                            //audioSource?.PlayOneShot(announcerTwo, sfxVolume * 0.5f);
+                        }
+                        else
+                        {
+                            player.AudioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.jump_special, player.playerOneShotAudioSource, 0f);
+                            //Core.Instance.audioManager.PlaySfxGameplay(SfxCollectionID.PhoneSfx, AudioClipID.FlipPhone_Select);
+                        }
+                        
+                        hasPlayedTwo = true;
+                    }
+                    else if (Mathf.CeilToInt(countdownTimer) == 1 && !hasPlayedOne)
+                    {
+                        if (AppExtras.SFXMode == SFXToggle.LLB || AppExtras.SFXMode == SFXToggle.FZero)
+                        {
+                            player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerOne, player.AudioManager.audioSources[3], 0f);
+                            //float sfxVolume = Core.Instance.AudioManager.SfxVolume;
+                            //audioSource?.PlayOneShot(announcerOne, sfxVolume * 0.5f);
+                        }
+                        else
+                        {
+                            player.AudioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.jump_special, player.playerOneShotAudioSource, 0f);
+                            //Core.Instance.audioManager.PlaySfxGameplay(SfxCollectionID.PhoneSfx, AudioClipID.FlipPhone_Select);
+                            //Core.Instance.audioManager.PlaySfxGameplay(SfxCollectionID.PhoneSfx, AudioClipID.FlipPhone_Select);
+                            //player.audioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.launcher_woosh,
+                            //player.playerOneShotAudioSource, 0f);
+                        }
+                        
+                        hasPlayedOne = true;
+                    }
+                }
 
                 if (countdownTimer <= 0f)
                 {
@@ -126,6 +295,34 @@ namespace ScoreAttack
                     player.score = 0f; // set score to 0
                     player.baseScore = 0f;
                     player.scoreMultiplier = 0f;
+
+                    if (playCustomSounds)
+                    {
+                        if (AppExtras.SFXMode == SFXToggle.LLB || AppExtras.SFXMode == SFXToggle.FZero)
+                        {
+                            player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerStart, player.AudioManager.audioSources[3], 0f);
+                            //float sfxVolume = Core.Instance.AudioManager.SfxVolume;
+                            //audioSource?.PlayOneShot(announcerStart, sfxVolume * 0.5f);
+                        }
+                        else
+                        {
+
+                            player.audioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.launcher_woosh, player.playerOneShotAudioSource, 0f);
+
+                            /*
+                            if (!hasPlayedStart)
+                            {
+                                player.audioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.launcher_woosh, player.playerOneShotAudioSource, 0f);
+                            }
+                            */
+                            //player.AudioManager.PlaySfxGameplay(SfxCollectionID.VoiceOldhead, AudioClipID.VoiceBoostTrick, player.playerOneShotAudioSource, 0f);
+
+                            //player.audioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.launcher_woosh,
+                            //player.playerOneShotAudioSource, 0f);
+                        }
+
+                        hasPlayedStart = true;
+                    }
                 }
             }
             else
@@ -135,10 +332,31 @@ namespace ScoreAttack
 
                 if (timeLimitTimer < 0f)
                 {
-                    // Play SFX when ending battle
-                    Core.Instance.AudioManager.PlaySfxUI(
+                    if (playCustomSounds)
+                    {
+                        if (AppExtras.SFXMode == SFXToggle.LLB || AppExtras.SFXMode == SFXToggle.FZero)
+                        {
+                            // Play LLB SFX
+                            player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerEnd, player.AudioManager.audioSources[3], 0f);
+                            //float sfxVolume = Core.Instance.AudioManager.SfxVolume;
+                            //audioSource?.PlayOneShot(announcerEnd, sfxVolume * 0.5f);
+                            hasPlayedEnd = true;
+                        }
+                        else
+                        {
+                            // Play the usual SFX when ending battle
+                            Core.Instance.AudioManager.PlaySfxUI(
+                            SfxCollectionID.EnvironmentSfx,
+                            AudioClipID.MascotUnlock);
+                        }
+                    }
+                    else
+                    {
+                        // Play SFX when ending battle
+                        Core.Instance.AudioManager.PlaySfxUI(
                         SfxCollectionID.EnvironmentSfx,
                         AudioClipID.MascotUnlock);
+                    }
 
                     // End battle
                     isScoreAttackActive = false;
@@ -231,10 +449,29 @@ namespace ScoreAttack
                 if (isNewBestDisplayed)
                 {
                     gameplay.targetScoreLabel.text = "New Best!";
+
+                    // Also play a jingle if custom sounds are enabled
+                    if (playCustomSounds && !hasPlayedBest)
+                    {
+                        if (AppExtras.SFXMode == SFXToggle.LLB || AppExtras.SFXMode == SFXToggle.FZero)
+                        {
+                            player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerBest, player.AudioManager.audioSources[3], 0f);
+                            //float sfxVolume = Core.Instance.AudioManager.SfxVolume;
+                            //audioSource?.PlayOneShot(announcerBest, sfxVolume * 0.5f);
+                            hasPlayedBest = true;
+                        }
+                        else
+                        {
+                            player.audioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.launcher_woosh,
+                            player.playerOneShotAudioSource, 0f);
+                            hasPlayedBest = true;
+                        }
+                    }
                 }
                 else
                 {
                     gameplay.targetScoreLabel.text = FormattingUtility.FormatPlayerScore(cultureInfo, personalBestScore);
+                    hasPlayedBest = false;
                 }
 
                 gameplay.totalScoreLabel.text = FormattingUtility.FormatPlayerScore(cultureInfo, ScoreGot);
@@ -310,7 +547,8 @@ namespace ScoreAttack
             if (timer == 0f)
             {
                 text = "0.00";
-                
+                //text = "Finish!";
+
             }
             return text;
         }

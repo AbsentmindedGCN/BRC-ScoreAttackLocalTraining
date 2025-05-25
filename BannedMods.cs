@@ -25,7 +25,7 @@ namespace ScoreAttack
         // Method to check if the specific mod is loaded
         public static bool IsAdvantageousModLoaded()
         {
-            // You need to replace "TrickGod" with the actual ID of the mod you want to check for
+            // Check if TrickGod is used
             return BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("TrickGod");
         }
     }

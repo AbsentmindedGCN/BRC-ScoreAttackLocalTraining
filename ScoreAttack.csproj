@@ -70,5 +70,8 @@
             <Private>false</Private>
             <Publicize>true</Publicize>
         </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>libs\Libraries\UnityEngine.UI.dll</HintPath>
+    </Reference>
   </ItemGroup>
 </Project>

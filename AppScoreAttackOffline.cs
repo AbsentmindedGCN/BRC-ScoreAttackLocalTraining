@@ -155,6 +155,30 @@ namespace ScoreAttack
             };
             ScrollView.AddButton(button);
 
+            // Clear or See Current Grind Debt Values
+            button = PhoneUIUtility.CreateSimpleButton("Grind Debt...");
+            button.OnConfirm += () => {
+                // Launch Grind Debt Viewer app.
+                MyPhone.OpenApp(typeof(AppGrindDebt));
+            };
+            ScrollView.AddButton(button);
+
+            // Manually set FPS Limit
+            button = PhoneUIUtility.CreateSimpleButton("Set FPS Limit...");
+            button.OnConfirm += () => {
+                // Launch FPS Limit app.
+                MyPhone.OpenApp(typeof(AppFPSLimit));
+            };
+            ScrollView.AddButton(button);
+
+            // Configure Extras
+            button = PhoneUIUtility.CreateSimpleButton("Extras...");
+            button.OnConfirm += () => {
+                // Launch Extras app.
+                MyPhone.OpenApp(typeof(AppExtras));
+            };
+            ScrollView.AddButton(button);
+
             // Set up respawn point for Score Attack practice
             button = PhoneUIUtility.CreateSimpleButton("Set Respawn");
             button.OnConfirm += () =>
@@ -177,13 +201,6 @@ namespace ScoreAttack
                 if (respawnPoint == null) return;
                 respawnPoint.ApplyToPlayer(MyPhone.player);
             };
-
-            button = PhoneUIUtility.CreateSimpleButton("Set FPS Limit...");
-            button.OnConfirm += () => {
-                // Launch FPS Limit app.
-                MyPhone.OpenApp(typeof(AppFPSLimit));
-            };
-            ScrollView.AddButton(button);
 
         }
 
