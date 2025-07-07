@@ -21,6 +21,8 @@ namespace ScoreAttack
         private PhoneButton goToRespawnButton = null;
         private WantedManager wantedManager;
 
+        public bool testingPlugin = true; // If testing, allow the use of 1 minute score attacks
+
         //public readonly Sprite EncounterIcon = TextureUtility.LoadSprite("encounter.png"); // 128x128
 
         // This phone app allows the player to select between 3, 5, or 10 minute timed score attack sessions
@@ -48,15 +50,30 @@ namespace ScoreAttack
                     return;
                 }
 
+                //Force stop previous battle, so partial replays and PBs are saved
+                bool isScoreBattleActive = ScoreAttackEncounter.IsScoreAttackActive();
+                if (isScoreBattleActive)
+                {
+                    // End the Score Battle
+                    ScoreAttackEncounter scoreAttackActiveEncounter = FindObjectOfType<ScoreAttackEncounter>();
+                    scoreAttackActiveEncounter.EndScoreAttack();
+
+                    //Save on ending
+                    Core.Instance.SaveManager.SaveCurrentSaveSlot();
+                }
+
                 // Refresh Boost, Cops, and More
                 BattleRefresh();
+
+                // Let the encounter show player PB and not ghost PB
+                ScoreAttackManager.ExternalGhostLoadedFromGhostList = false;
 
                 // Respawn Player, if respawn exists
                 var stage = Core.Instance.BaseModule.CurrentStage;
                 var respawnPoint = ScoreAttackSaveData.Instance.GetRespawnPoint(stage);
                 if (respawnPoint == null)
                 {
-                    Core.Instance.UIManager.ShowNotification("Please set a respawn point first!");
+                    Core.Instance.UIManager.ShowNotification("Please set a respawn point first!\n<size=50%>It's at the bottom of the app menu!</size>");
                     return;
                 }
                 else
@@ -83,8 +100,23 @@ namespace ScoreAttack
                 // New Encounter
                 Debug.Log("Starting 5 Minute Score Battle...");
 
+                //Force stop previous battle, so partial replays and PBs are saved
+                bool isScoreBattleActive = ScoreAttackEncounter.IsScoreAttackActive();
+                if (isScoreBattleActive)
+                {
+                    // End the Score Battle
+                    ScoreAttackEncounter scoreAttackActiveEncounter = FindObjectOfType<ScoreAttackEncounter>();
+                    scoreAttackActiveEncounter.EndScoreAttack();
+
+                    //Save on ending
+                    Core.Instance.SaveManager.SaveCurrentSaveSlot();
+                }
+
                 // Refresh Boost, Cops, and More
                 BattleRefresh();
+
+                // Let the encounter show player PB and not ghost PB
+                ScoreAttackManager.ExternalGhostLoadedFromGhostList = false;
 
                 // Stop Plugin from working if TrickGod is enabled.
                 if (BannedMods.IsAdvantageousModLoaded())
@@ -98,7 +130,7 @@ namespace ScoreAttack
                 var respawnPoint = ScoreAttackSaveData.Instance.GetRespawnPoint(stage);
                 if (respawnPoint == null)
                 {
-                    Core.Instance.UIManager.ShowNotification("Please set a respawn point first!");
+                    Core.Instance.UIManager.ShowNotification("Please set a respawn point first!\n<size=50%>It's at the bottom of the app menu!</size>");
                     return;
                 }
                 else
@@ -122,8 +154,23 @@ namespace ScoreAttack
                 // New Encounter
                 Debug.Log("Starting 10 Minute Score Battle...");
 
+                //Force stop previous battle, so partial replays and PBs are saved
+                bool isScoreBattleActive = ScoreAttackEncounter.IsScoreAttackActive();
+                if (isScoreBattleActive)
+                {
+                    // End the Score Battle
+                    ScoreAttackEncounter scoreAttackActiveEncounter = FindObjectOfType<ScoreAttackEncounter>();
+                    scoreAttackActiveEncounter.EndScoreAttack();
+
+                    //Save on ending
+                    Core.Instance.SaveManager.SaveCurrentSaveSlot();
+                }
+
                 // Refresh Boost, Cops, and More
                 BattleRefresh();
+
+                // Let the encounter show player PB and not ghost PB
+                ScoreAttackManager.ExternalGhostLoadedFromGhostList = false;
 
                 // Stop Plugin from working if TrickGod is enabled.
                 if (BannedMods.IsAdvantageousModLoaded())
@@ -137,7 +184,7 @@ namespace ScoreAttack
                 var respawnPoint = ScoreAttackSaveData.Instance.GetRespawnPoint(stage);
                 if (respawnPoint == null)
                 {
-                    Core.Instance.UIManager.ShowNotification("Please set a respawn point first!");
+                    Core.Instance.UIManager.ShowNotification("Please set a respawn point first!\n<size=50%>It's at the bottom of the app menu!</size>");
                     return;
                 }
                 else
@@ -156,12 +203,75 @@ namespace ScoreAttack
             };
             ScrollView.AddButton(button);
 
+            // --- FOR TESTING PURPOSES ---
+            if (testingPlugin == true)
+            {
+                button = PhoneUIUtility.CreateSimpleButton("1 Minute");
+                button.OnConfirm += () =>
+                {
+                    // New Encounter
+                    Debug.Log("Starting 1 Minute Score Battle...");
+
+                    //Force stop previous battle, so partial replays and PBs are saved
+                    bool isScoreBattleActive = ScoreAttackEncounter.IsScoreAttackActive();
+                    if (isScoreBattleActive)
+                    {
+                        // End the Score Battle
+                        ScoreAttackEncounter scoreAttackActiveEncounter = FindObjectOfType<ScoreAttackEncounter>();
+                        scoreAttackActiveEncounter.EndScoreAttack();
+
+                        //Save on ending
+                        Core.Instance.SaveManager.SaveCurrentSaveSlot();
+                    }
+
+                    // Refresh Boost, Cops, and More
+                    BattleRefresh();
+
+                    // Let the encounter show player PB and not ghost PB
+                    ScoreAttackManager.ExternalGhostLoadedFromGhostList = false;
+
+                    // Stop Plugin from working if TrickGod is enabled.
+                    if (BannedMods.IsAdvantageousModLoaded())
+                    {
+                        Core.Instance.UIManager.ShowNotification("The score attack app is not compatible with TrickGod!");
+                        return;
+                    }
+
+                    // Respawn Player, if respawn exists
+                    var stage = Core.Instance.BaseModule.CurrentStage;
+                    var respawnPoint = ScoreAttackSaveData.Instance.GetRespawnPoint(stage);
+                    if (respawnPoint == null)
+                    {
+                        Core.Instance.UIManager.ShowNotification("Please set a respawn point first!\n<size=50%>It's at the bottom of the app menu!</size>");
+                        return;
+                    }
+                    else
+                    {
+                        respawnPoint.ApplyToPlayer(MyPhone.player);
+
+                        ScoreAttackManager.StartScoreAttack(60f * 1f);
+                        MyPhone.CloseCurrentApp();
+                        MyPhone.TurnOff();
+                    }
+
+                    ScoreAttackManager.StartScoreAttack(60f * 1f);
+                    MyPhone.CloseCurrentApp();
+                    MyPhone.TurnOff();
+
+                };
+                ScrollView.AddButton(button);
+            }
+            // --- wooo ---
+
 
             button = PhoneUIUtility.CreateSimpleButton("Cancel Run");
             button.OnConfirm += () =>
             {
                 // New Encounter
                 Debug.Log("Cancelling Active Battle...");
+
+                ScoreAttackManager.LoadedExternalGhost = null;
+                ScoreAttackManager.ExternalGhostLoadedFromGhostList = false; // check
 
                 bool isScoreBattleActive = ScoreAttackEncounter.IsScoreAttackActive();
                 if (isScoreBattleActive)

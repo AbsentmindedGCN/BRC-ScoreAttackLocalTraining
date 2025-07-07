@@ -1,5 +1,6 @@
 ﻿using CommonAPI;
 using Reptile;
+using ScoreAttackGhostSystem;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -17,6 +18,9 @@ namespace ScoreAttack
 
         //private readonly Dictionary<Stage, float> personalBests = new Dictionary<Stage, float>();
         public Dictionary<Stage, PersonalBest> PersonalBestByStage = [];
+
+        // Ghosts
+        public Dictionary<Stage, GhostData> BestGhostsByStage = [];
 
         // Grind Debt Timer Visible
         public bool GrindDebtTimerVisible { get; set; }
@@ -44,6 +48,22 @@ namespace ScoreAttack
                 PersonalBestByTimeLimit[timeLimit] = best;
             }
         }
+        public class GhostData
+        {
+            public Dictionary<float, Ghost> GhostByTimeLimit = new Dictionary<float, Ghost>();
+
+            public Ghost GetGhost(float timeLimit)
+            {
+                if (GhostByTimeLimit.TryGetValue(timeLimit, out var result))
+                    return result;
+                return null;
+            }
+
+            public void SetGhost(float timeLimit, Ghost ghost)
+            {
+                GhostByTimeLimit[timeLimit] = ghost;
+            }
+        }
 
         public PersonalBest GetOrCreatePersonalBest(Stage stage)
         {
@@ -54,6 +74,15 @@ namespace ScoreAttack
             return personalBest;
         }
 
+        // Get or create Ghost data for a stage
+        public GhostData GetOrCreateGhostData(Stage stage) //, float fps)
+        {
+            if (BestGhostsByStage.TryGetValue(stage, out var ghostData))
+            { return ghostData; }
+            ghostData = new GhostData();
+            BestGhostsByStage[stage] = ghostData;
+            return ghostData;
+        }
 
         // Property to store and retrieve target frame rate
         public int TargetFrameRate { get; set; }
@@ -123,6 +152,25 @@ namespace ScoreAttack
                     personalBest.SetPersonalBest(timeLimit, best);
                 }
                 PersonalBestByStage[stage] = personalBest;
+            }
+
+            // Read ghosts
+            var ghostCount = reader.ReadInt32();
+            for (int i = 0; i < ghostCount; i++)
+            {
+                var stage = (Stage)reader.ReadInt32();
+                var ghostData = new GhostData();
+                var timeLimitCount = reader.ReadInt32();
+                for (int j = 0; j < timeLimitCount; j++)
+                {
+                    var timeLimit = reader.ReadSingle();
+                    //var ghost = reader.ReadSingle();
+                    var ghost = new Ghost(240f); // Default to 60 FPS, changed to 240
+                    //ghost.ReadGhostData(reader);
+                    ghostData.SetGhost(timeLimit, ghost);
+                    //ghostData.SetGhost(timeLimit, best);
+                }
+                BestGhostsByStage[stage] = ghostData;
             }
 
             // Read and set target frame rate
@@ -217,6 +265,21 @@ namespace ScoreAttack
                 {
                     writer.Write(timeLimitPair.Key);
                     writer.Write(timeLimitPair.Value);
+                }
+            }
+
+            // Write ghosts
+            writer.Write(BestGhostsByStage.Count);
+            foreach (var ghostPair in BestGhostsByStage)
+            {
+                writer.Write((int)ghostPair.Key); // Write stage ID
+                var ghostData = ghostPair.Value;
+                writer.Write(ghostData.GhostByTimeLimit.Count); // Write count of ghosts
+
+                foreach (var ghostTimePair in ghostData.GhostByTimeLimit)
+                {
+                    writer.Write(ghostTimePair.Key); // Write time limit
+                    //ghostTimePair.Value.WriteGhostData(writer);
                 }
             }
 

@@ -14,6 +14,8 @@ using UnityEngine.SocialPlatforms.Impl;
 using System.Globalization;
 using UnityEngine.Events;
 using System.Collections;
+using ScoreAttackGhostSystem;
+using static Reptile.FixedFramerateSequence;
 
 namespace ScoreAttack
 {
@@ -34,12 +36,24 @@ namespace ScoreAttack
         private bool isNewBestDisplayed = false;
 
         // Set true if battle is active
-        private static bool isScoreAttackActive = false;
+        public static bool isScoreAttackActive { get; private set; } = false;
 
         // For Saving PBs
         private Stage currentStage; // Add a field to store the current stage
 
         //private float initialScore = 0.0f;
+
+        // Ghost
+        private Ghost currentBestGhost; // Loaded ghost for current stage/time limit
+        private object ghostPlayerInstance; // Cached reference to _ghostPlayer
+        public object ghostRecorderInstance { get; private set; } // Cached reference to _ghostRecorder
+        private float ghostEndTimer = -1f; // Delay for ghost despawn
+
+        // Ghost Score
+        private float externalGhostScore = -1f;
+
+        // Set up WantedManager to clear cops
+        private WantedManager wantedManager;
 
         private bool playCustomSounds = false; // default to false
 
@@ -58,6 +72,19 @@ namespace ScoreAttack
         private bool hasPlayedStart = false;
         private bool hasPlayedEnd = false;
         private bool hasPlayedBest = false;
+
+        // Custom Time
+        public static float customDeltaTime
+        {
+            get
+            {
+                return Time.deltaTime; // Just do it like TR I guess
+                //return Time.unscaledDeltaTime;
+            }
+            set
+            {
+            }
+        }
 
         private IEnumerator LoadAnnouncerClips()
         {
@@ -93,7 +120,7 @@ namespace ScoreAttack
                 yield return LoadOgg(Path.Combine(pluginPath, "sfx/express.ogg"), clip => announcerBest = clip);
             }
 
-                if (audioSource == null)
+            if (audioSource == null)
             {
                 GameObject go = new GameObject("AnnouncerAudioSource");
                 audioSource = go.AddComponent<AudioSource>();
@@ -143,7 +170,6 @@ namespace ScoreAttack
             base.InitSceneObject();
         }
 
-
         // Start Score Battle and Refresh the Stuff
         public override void StartMainEvent()
         {
@@ -160,6 +186,18 @@ namespace ScoreAttack
             // Refresh Stale Moves
             //player.RefreshAirTricks();
             player.RefreshAllDegrade();
+
+            // Clear Police
+            ResetPoliceState();
+
+            // Clear any Ghost if one exists
+            TryEndGhostPlaybackIfActive();
+
+            // Start a New Ghost Recording
+            StartGhostRecording();
+
+            // Play back personal best ghost at the same time
+            StartGhostPlaybackAlongsideRecording();
 
             // Set battle as active
             isScoreAttackActive = true;
@@ -183,6 +221,43 @@ namespace ScoreAttack
                 //Core.Instance.SaveManager.SaveCurrentSaveSlot();
             }
 
+            var ghostManager = GhostManager.Instance;
+            //var ghostManagerType = typeof(GhostManager);
+
+            // Get ghost player
+            //var ghostPlayerField = ghostManagerType.GetField("_ghostPlayer", BindingFlags.NonPublic | BindingFlags.Instance);
+            ghostPlayerInstance = ghostManager.GhostPlayer;
+
+            // Get ghost recorder
+            //var ghostRecorderField = ghostManagerType.GetField("_ghostRecorder", BindingFlags.NonPublic | BindingFlags.Instance);
+            ghostRecorderInstance = ghostManager.GhostRecorder;
+
+            // ----
+            // Load the best ghost for the current stage and time limit
+            //Ghost bestGhost = GhostSaveData.Instance.GetOrCreateGhostData(currentStage).GetGhost(timeLimit); //commented out?
+            Ghost bestGhost = GhostSaveData.Instance.GetOrCreateGhostData(currentStage).GetGhost(timeLimit); //commented out?
+
+            /*
+            // If no ghost exists yet, create a placeholder
+            if (bestGhost == null)
+            {
+                bestGhost = new Ghost(60f); // Default FPS?
+                GhostSaveData.Instance.GetOrCreateGhostData(currentStage).SetGhost(timeLimit, bestGhost);
+                //Core.Instance.SaveManager.SaveCurrentSaveSlot();
+            }
+            */
+
+            // ----
+
+            if (ScoreAttackManager.ExternalGhostLoadedFromGhostList && ScoreAttackManager.LoadedExternalGhost != null)
+            {
+                externalGhostScore = ScoreAttackManager.ExternalGhostScore;
+            }
+            else
+            {
+                externalGhostScore = -1f; // no external ghost score loaded
+            }
+
             // Call base StartMainEvent
             base.StartMainEvent();
 
@@ -193,17 +268,14 @@ namespace ScoreAttack
         }
 
 
-
         // Update Score as the player gets it
         public override void UpdateMainEvent()
         {
-
             // Update the personal best score if the current score is higher
             float currentScore = ScoreGot;
 
-
-            if (player.IsBusyWithSequence())
-                return;
+            //if (player.IsBusyWithSequence())
+            //    return;
 
             /*
             if (player.IsBusyWithSequence())
@@ -221,7 +293,8 @@ namespace ScoreAttack
                 }
 
                 // Countdown logic
-                countdownTimer -= Core.dt;
+                countdownTimer -= customDeltaTime;
+                //countdownTimer -= Core.dt;
                 //var text = NiceTimerString(countdownTimer);
                 var text = Mathf.CeilToInt(countdownTimer).ToString(); // Display only 3, 2, 1
                 GameplayUI gameplay = Core.Instance.UIManager.gameplay;
@@ -234,17 +307,10 @@ namespace ScoreAttack
                         if (AppExtras.SFXMode == SFXToggle.LLB || AppExtras.SFXMode == SFXToggle.FZero)
                         {
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerThree, player.AudioManager.audioSources[3], 0f);
-
-                            //player.AudioManager.PlayOneShotSfx(Reptile.AudioManager.mixerGroups[3], announcerThree, Reptile.AudioManager.audioSources[3], 0f);
-                            //float sfxVolume = Core.Instance.AudioManager.SfxVolume;
-                            //audioSource?.PlayOneShot(announcerThree, sfxVolume * 0.5f);
                         }
                         else
                         {
                             player.AudioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.jump_special, player.playerOneShotAudioSource, 0f);
-                            //Core.Instance.audioManager.PlaySfxGameplay(SfxCollectionID.PhoneSfx, AudioClipID.FlipPhone_Select);
-                            //player.audioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.siren,
-                            //player.playerOneShotAudioSource, 0f);
                         }
 
                         hasPlayedThree = true;
@@ -254,15 +320,12 @@ namespace ScoreAttack
                         if (AppExtras.SFXMode == SFXToggle.LLB || AppExtras.SFXMode == SFXToggle.FZero)
                         {
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerTwo, player.AudioManager.audioSources[3], 0f);
-                            //float sfxVolume = Core.Instance.AudioManager.SfxVolume;
-                            //audioSource?.PlayOneShot(announcerTwo, sfxVolume * 0.5f);
                         }
                         else
                         {
                             player.AudioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.jump_special, player.playerOneShotAudioSource, 0f);
-                            //Core.Instance.audioManager.PlaySfxGameplay(SfxCollectionID.PhoneSfx, AudioClipID.FlipPhone_Select);
                         }
-                        
+
                         hasPlayedTwo = true;
                     }
                     else if (Mathf.CeilToInt(countdownTimer) == 1 && !hasPlayedOne)
@@ -270,18 +333,12 @@ namespace ScoreAttack
                         if (AppExtras.SFXMode == SFXToggle.LLB || AppExtras.SFXMode == SFXToggle.FZero)
                         {
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerOne, player.AudioManager.audioSources[3], 0f);
-                            //float sfxVolume = Core.Instance.AudioManager.SfxVolume;
-                            //audioSource?.PlayOneShot(announcerOne, sfxVolume * 0.5f);
                         }
                         else
                         {
                             player.AudioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.jump_special, player.playerOneShotAudioSource, 0f);
-                            //Core.Instance.audioManager.PlaySfxGameplay(SfxCollectionID.PhoneSfx, AudioClipID.FlipPhone_Select);
-                            //Core.Instance.audioManager.PlaySfxGameplay(SfxCollectionID.PhoneSfx, AudioClipID.FlipPhone_Select);
-                            //player.audioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.launcher_woosh,
-                            //player.playerOneShotAudioSource, 0f);
                         }
-                        
+
                         hasPlayedOne = true;
                     }
                 }
@@ -290,7 +347,7 @@ namespace ScoreAttack
                 {
                     isCountdownFinished = true;
                     timeLimitTimer = timeLimit; // Start the main timer after the countdown finishes
-                    
+
                     // reset any score gathered during countdown
                     player.score = 0f; // set score to 0
                     player.baseScore = 0f;
@@ -301,24 +358,10 @@ namespace ScoreAttack
                         if (AppExtras.SFXMode == SFXToggle.LLB || AppExtras.SFXMode == SFXToggle.FZero)
                         {
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerStart, player.AudioManager.audioSources[3], 0f);
-                            //float sfxVolume = Core.Instance.AudioManager.SfxVolume;
-                            //audioSource?.PlayOneShot(announcerStart, sfxVolume * 0.5f);
                         }
                         else
                         {
-
                             player.audioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.launcher_woosh, player.playerOneShotAudioSource, 0f);
-
-                            /*
-                            if (!hasPlayedStart)
-                            {
-                                player.audioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.launcher_woosh, player.playerOneShotAudioSource, 0f);
-                            }
-                            */
-                            //player.AudioManager.PlaySfxGameplay(SfxCollectionID.VoiceOldhead, AudioClipID.VoiceBoostTrick, player.playerOneShotAudioSource, 0f);
-
-                            //player.audioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.launcher_woosh,
-                            //player.playerOneShotAudioSource, 0f);
                         }
 
                         hasPlayedStart = true;
@@ -328,7 +371,8 @@ namespace ScoreAttack
             else
             {
                 // Main event logic
-                timeLimitTimer -= Core.dt;
+                //timeLimitTimer -= Core.dt;
+                timeLimitTimer -= customDeltaTime;
 
                 if (timeLimitTimer < 0f)
                 {
@@ -358,8 +402,73 @@ namespace ScoreAttack
                         AudioClipID.MascotUnlock);
                     }
 
+                    // Reload personal bests after battle
+                    personalBestScore = ScoreAttackSaveData.Instance.GetOrCreatePersonalBest(currentStage).GetPersonalBest(timeLimit);
+
+                    // Check if there is a new personal best
+                    if (ScoreGot > personalBestScore)
+                    {
+                        SavePB();
+
+                        // Export ghost here again, it's not working other places
+                        Debug.Log("[ScoreAttack] Exporting new personal best as external ghost (OnlyPB mode).");
+                        var pbreplay = (ghostRecorderInstance as GhostRecorder)?.Replay;
+                        GhostSaveData.Instance.SaveGhostToFile(pbreplay, currentStage, timeLimit, ScoreGot);
+                    }
+
+                    // Save External Ghost
+                    var replay = (ghostRecorderInstance as GhostRecorder)?.Replay;
+
+                    if (replay != null && replay.Frames.Count > 0 && ScoreGot >= 1f)
+                    {
+                        if (GhostSaveData.Instance.GhostSaveMode == GhostSaveMode.OnlyPB)
+                        {
+                            if (ScoreGot < personalBestScore)
+                            {
+                                Debug.Log("[ScoreAttack] Score was not a personal best. External ghost not saved (OnlyPB mode).");
+                            }
+                        }
+                        else if (GhostSaveData.Instance.GhostSaveMode == GhostSaveMode.Enabled)
+                        {
+                            Debug.Log("[ScoreAttack] Saving ghost (Enabled mode).");
+                            GhostSaveData.Instance.SaveGhostToFile(replay, currentStage, timeLimit, ScoreGot);
+                        }
+                        else
+                        {
+                            Debug.Log("[ScoreAttack] Ghost Auto Save is disabled. No ghost saved.");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[ScoreAttack] Replay was null or had no frames. Ghost not saved.");
+                    }
+
+
+                    // End Ghost
+                    //EndGhostPlayback();
+                    TryEndGhostPlaybackIfActive();
+
                     // End battle
                     isScoreAttackActive = false;
+
+                    // Clear Police (Fix for leftover chains)
+                    ResetPoliceState();
+
+                    // Stop Ghost after ~3 sec
+                    //ghostEndTimer = 3f;
+
+                    /*
+                    // Countdown real quick
+                    if (ghostEndTimer > 0f)
+                    {
+                        ghostEndTimer -= customDeltaTime;
+                        if (ghostEndTimer <= 0f)
+                        {
+                            EndGhostPlayback();
+                            ghostEndTimer = -1f; // Prevent it from running again
+                        }
+                    }
+                    */
 
                     timeLimitTimer = 0f;
                 }
@@ -372,13 +481,13 @@ namespace ScoreAttack
                 {
                     personalBestScore = ScoreGot;
 
-                    // Update Save Data
+                    /*// Update Save Data
                     ScoreAttackSaveData.Instance.GetOrCreatePersonalBest(currentStage).SetPersonalBest(timeLimit, personalBestScore);
-                    Core.Instance.SaveManager.SaveCurrentSaveSlot();
+                    Core.Instance.SaveManager.SaveCurrentSaveSlot();*/
                 }
 
                 // Save personal best after updating
-                Core.Instance.SaveManager.SaveCurrentSaveSlot();
+                //Core.Instance.SaveManager.SaveCurrentSaveSlot();
 
                 if (personalBestScore != ScoreGot)
                 {
@@ -397,7 +506,6 @@ namespace ScoreAttack
                 SetEncounterState(Encounter.EncounterState.MAIN_EVENT_SUCCES_DECAY);
             }
         }
-
 
         public void SetScoreUI()
         {
@@ -433,50 +541,74 @@ namespace ScoreAttack
                 var text = NiceTimerString(timeLimitTimer);
                 gameplay.timeLimitLabel.text = text;
 
-                // Check if ScoreGot is greater than personalBestScore
+                // Check if player beat personal best
                 if (ScoreGot > personalBestScore)
                 {
-                    // If ScoreGot is greater than personalBestScore, update personalBestScore and set isNewBestDisplayed to true
                     personalBestScore = ScoreGot;
                     isNewBestDisplayed = true;
-
-                    //This fixes one PB from sticking
-                    ScoreAttackSaveData.Instance.GetOrCreatePersonalBest(currentStage).SetPersonalBest(timeLimit, personalBestScore);
-                    Core.Instance.SaveManager.SaveCurrentSaveSlot();
                 }
 
-                // Display the personal best score or "New Best!" message
-                if (isNewBestDisplayed)
+                // --- Begin Ghost vs PB Display Logic ---
+                bool ghostLoaded = ScoreAttackManager.ExternalGhostLoadedFromGhostList;
+                float ghostScore = ScoreAttackManager.ExternalGhostScore;
+
+                if (ghostLoaded && ScoreGot > ghostScore && ghostScore >= 0f)
+                {
+                    gameplay.targetScoreLabel.text = "Ghost Beaten!";
+
+                    // Optional jingle for beating ghost
+                    if (playCustomSounds && !hasPlayedBest)
+                    {
+                        player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerBest, player.AudioManager.audioSources[3], 0f);
+                        hasPlayedBest = true;
+                    }
+                }
+                else if (isNewBestDisplayed)
                 {
                     gameplay.targetScoreLabel.text = "New Best!";
 
-                    // Also play a jingle if custom sounds are enabled
                     if (playCustomSounds && !hasPlayedBest)
                     {
                         if (AppExtras.SFXMode == SFXToggle.LLB || AppExtras.SFXMode == SFXToggle.FZero)
                         {
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerBest, player.AudioManager.audioSources[3], 0f);
-                            //float sfxVolume = Core.Instance.AudioManager.SfxVolume;
-                            //audioSource?.PlayOneShot(announcerBest, sfxVolume * 0.5f);
                             hasPlayedBest = true;
                         }
                         else
                         {
-                            player.audioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.launcher_woosh,
-                            player.playerOneShotAudioSource, 0f);
+                            player.audioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.launcher_woosh, player.playerOneShotAudioSource, 0f);
                             hasPlayedBest = true;
                         }
                     }
                 }
+
+                //Update UI
                 else
                 {
-                    gameplay.targetScoreLabel.text = FormattingUtility.FormatPlayerScore(cultureInfo, personalBestScore);
+                    if (ScoreAttackManager.ExternalGhostLoadedFromGhostList && ScoreAttackManager.ExternalGhostScore >= 0f)
+                    {
+                        gameplay.targetScoreLabel.text = FormattingUtility.FormatPlayerScore(cultureInfo, ScoreAttackManager.ExternalGhostScore);
+                    }
+                    else
+                    {
+                        gameplay.targetScoreLabel.text = FormattingUtility.FormatPlayerScore(cultureInfo, personalBestScore);
+                    }
+
                     hasPlayedBest = false;
                 }
 
+
                 gameplay.totalScoreLabel.text = FormattingUtility.FormatPlayerScore(cultureInfo, ScoreGot);
-                gameplay.targetScoreTitleLabel.text = "Personal Best:";
-                gameplay.totalScoreTitleLabel.text = (timeLimit/60)+" "+"Min."+" "+"Score:";
+                //gameplay.targetScoreTitleLabel.text = "Personal Best:";
+                if (ScoreAttackManager.ExternalGhostLoadedFromGhostList == true)
+                {
+                    gameplay.targetScoreTitleLabel.text = "Ghost Score:";
+                }
+                else
+                {
+                    gameplay.targetScoreTitleLabel.text = "Personal Best:";
+                }
+                gameplay.totalScoreTitleLabel.text = (timeLimit / 60) + " " + "Min." + " " + "Score:";
             }
         }
 
@@ -484,27 +616,55 @@ namespace ScoreAttack
         public void EndScoreAttack()
         {
 
-            // Play SFX when ending battle
-            /*
-            Core.Instance.AudioManager.PlaySfxUI(
-                SfxCollectionID.MenuSfx,
-                AudioClipID.cancel);
-            */
-
             // Reload personal bests after battle
             personalBestScore = ScoreAttackSaveData.Instance.GetOrCreatePersonalBest(currentStage).GetPersonalBest(timeLimit);
-            //personalBestScore = ScoreAttackSaveData.Instance.GetOrCreatePersonalBest(currentStage).GetPersonalBest(timeLimit);
+
+            // Reload ghost data after battle
+            //currentBestGhost = ScoreAttackGhostSaveData.Instance.GetOrCreateGhostData(currentStage).GetGhost(timeLimit);
 
             // Update personal best score if the current score surpasses it
             if (ScoreGot > personalBestScore)
             {
-                personalBestScore = ScoreGot;
-                ScoreAttackSaveData.Instance.GetOrCreatePersonalBest(currentStage).SetPersonalBest(timeLimit, personalBestScore);
-                //Core.Instance.SaveManager.SaveCurrentSaveSlot();
+                SavePB();
+
+                // Export Ghost Here because it's not working other places
+                Debug.Log("[ScoreAttack] Exporting new personal best as external ghost (OnlyPB mode).");
+                var pbreplay = (ghostRecorderInstance as GhostRecorder)?.Replay;
+                GhostSaveData.Instance.SaveGhostToFile(pbreplay, currentStage, timeLimit, ScoreGot);
+
             }
 
+            var replay = (ghostRecorderInstance as GhostRecorder)?.Replay;
+
+            if (replay != null && replay.Frames.Count > 0 && ScoreGot >= 1f)
+            {
+                if (GhostSaveData.Instance.GhostSaveMode == GhostSaveMode.OnlyPB)
+                {
+                    if (ScoreGot < personalBestScore)
+                    {
+                        Debug.Log("[ScoreAttack] Score was not a personal best. External ghost not saved (OnlyPB mode).");
+                    }
+                }
+                else if (GhostSaveData.Instance.GhostSaveMode == GhostSaveMode.Enabled)
+                {
+                    Debug.Log("[ScoreAttack] Saving ghost (Enabled mode).");
+                    GhostSaveData.Instance.SaveGhostToFile(replay, currentStage, timeLimit, ScoreGot);
+                }
+                else
+                {
+                    Debug.Log("[ScoreAttack] Ghost Auto Save is disabled. No ghost saved.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[ScoreAttack] Replay was null or had no frames. Ghost not saved.");
+            }
+
+            // Clear any Ghost if one exists
+            TryEndGhostPlaybackIfActive();
+
             // Save personal best after updating
-            Core.Instance.SaveManager.SaveCurrentSaveSlot();
+            //Core.Instance.SaveManager.SaveCurrentSaveSlot();
 
             // Deactivate the score attack
             isScoreAttackActive = false;
@@ -521,9 +681,39 @@ namespace ScoreAttack
 
             //SetEncounterState(Encounter.EncounterState.MAIN_EVENT_SUCCES_DECAY);
             SetEncounterState(Encounter.EncounterState.MAIN_EVENT_FAILED_DECAY);
-            //This shouldn't matter if it's dailed or succes?
+            //This shouldn't matter if it's failed or succes?
         }
 
+        private void SavePB()
+        {
+            personalBestScore = ScoreGot;
+            ScoreAttackSaveData.Instance.GetOrCreatePersonalBest(currentStage).SetPersonalBest(timeLimit, personalBestScore);
+
+            if (GhostSaveData.Instance.GhostSaveMode != GhostSaveMode.Disabled)
+            {
+                var replay = (ghostRecorderInstance as GhostRecorder)?.Replay;
+                if (replay != null && replay.Frames.Count > 0)
+                {
+                    replay.Score = ScoreGot;
+
+                    GhostSaveData.Instance
+                        .GetOrCreateGhostData(currentStage)
+                        .SetGhost(timeLimit, replay);
+
+                    Debug.Log($"[ScoreAttack] New PB ghost {timeLimit / 60} min saved with {replay.Frames.Count} frames. Score was {replay.Score}.");
+
+                    // Save external file
+                    //GhostSaveData.Instance.SaveGhostToFile(replay, currentStage, timeLimit, ScoreGot);
+                }
+
+                Core.Instance.SaveManager.SaveCurrentSaveSlot();
+            }
+            else
+            {
+                Debug.Log($"[ScoreAttack] Ghost Save Mode is set to disabled. Not saving player's new PB.");
+            }
+
+        }
 
         public void TurnOffScoreUI()
         {
@@ -597,21 +787,176 @@ namespace ScoreAttack
             Core.Instance.UIManager.ShowNotification("All personal bests have been erased.");
         }
 
-        /*
-        // Only clears current stage?
-        public void ClearPersonalBest()
+        private void ResetPoliceState()
         {
-            personalBestScore = 0.0f;
-            displayBestScore = 0.0f;
-            isNewBestDisplayed = false;
 
-            // Clear the stored personal best score for the current stage
-            ScoreAttackSaveData.Instance.GetOrCreatePersonalBest(currentStage).SetPersonalBest(timeLimit, personalBestScore);
+            wantedManager = WantedManager.instance;
+            if (wantedManager == null)
+                wantedManager = WantedManager.instance;
 
-            //Save now that the data is cleared
-            Core.Instance.SaveManager.SaveCurrentSaveSlot();
+            if (wantedManager != null && wantedManager.Wanted)
+            {
+                wantedManager.StopPlayerWantedStatus(true);
+            }
+
+            var player = WorldHandler.instance.GetCurrentPlayer();
+            if (player != null)
+            {
+                // Restore HP
+                player.ResetHP();
+
+                // Remove Cuffs
+                if (player.AmountOfCuffs() > 0)
+                {
+                    player.RemoveAllCuffs();
+                    //this.cuffs[i].SetState(PlayerCuff.CuffState.Hidden);
+                }
+            }
+
         }
-        */
+
+        private void StartGhostRecording()
+        {
+            GhostManager.Instance.CurrentGhostState?.End();
+            GhostManager.Instance.RemoveCurrentGhostState();
+            GhostManager.Instance.GhostRecorder.Start();
+            GhostManager.Instance.AddCurrentGhostState();
+        }
+
+        // We need to make a copy of the ghost
+        private void StartGhostPlaybackAlongsideRecording()
+        {
+
+            // Check if ghost display is disabled
+            if (GhostSaveData.Instance.GhostDisplayMode == GhostDisplayMode.Hide)
+            {
+                Debug.Log("[ScoreAttack] Ghost display mode set to Hide. Skipping ghost playback.");
+                return;
+            }
+
+            // Get the personal best ghost from save data
+            //Ghost bestGhost = GhostSaveData.Instance.GetOrCreateGhostData(currentStage).GetGhost(timeLimit);
+
+            // New Solution - load an external ghost (from file) only when one is set, and fall back to the PB ghost if not.
+            Ghost bestGhost;
+
+            if (ScoreAttackManager.LoadedExternalGhost != null)
+            {
+                bestGhost = ScoreAttackManager.LoadedExternalGhost;
+                ScoreAttackManager.LoadedExternalGhost = null; // Clear it after use
+                Debug.Log("[ScoreAttack] Using externally loaded ghost.");
+            }
+            else
+            {
+                // Fallback to personal best ghost
+                bestGhost = GhostSaveData.Instance.GetOrCreateGhostData(currentStage).GetGhost(timeLimit);
+                Debug.Log("[ScoreAttack] Using personal best ghost.");
+            }
+
+            // Safety check
+            if (bestGhost == null || bestGhost.Frames == null || bestGhost.Frames.Count == 0)
+            {
+                Debug.LogWarning("[ScoreAttack] No valid ghost to play.");
+                return;
+            }
+
+            // Make a deep copy of the ghost to avoid modifying the saved one
+            Ghost ghostCopy = new Ghost(bestGhost.TickDelta)
+            {
+                Character = bestGhost.Character,
+                CharacterGUID = bestGhost.CharacterGUID,
+                Outfit = bestGhost.Outfit
+                //Score = bestGhost.Score; 
+            };
+
+            foreach (GhostFrame originalFrame in bestGhost.Frames)
+            {
+                GhostFrame frameCopy = new GhostFrame(ghostCopy)
+                {
+                    FrameIndex = originalFrame.FrameIndex,
+                    Valid = originalFrame.Valid,
+
+                    PlayerPosition = originalFrame.PlayerPosition,
+                    PlayerRotation = originalFrame.PlayerRotation,
+                    Velocity = originalFrame.Velocity,
+
+                    PhoneState = originalFrame.PhoneState,
+                    SpraycanState = originalFrame.SpraycanState,
+
+                    moveStyle = originalFrame.moveStyle,
+                    equippedMoveStyle = originalFrame.equippedMoveStyle,
+                    UsingEquippedMoveStyle = originalFrame.UsingEquippedMoveStyle,
+                    
+                    Animation = new GhostFrame.GhostFrameAnimation() {
+                        ID = originalFrame.Animation.ID,
+                        Time = originalFrame.Animation.Time,
+                        ForceOverwrite = originalFrame.Animation.ForceOverwrite,
+                        Instant = originalFrame.Animation.Instant,
+                        AtTime = originalFrame.Animation.AtTime
+                    },
+                    
+                    Visual = new GhostFrame.GhostFrameVisual() {
+                        Position = originalFrame.Visual.Position,
+                        Rotation = originalFrame.Visual.Rotation,
+
+                        boostpackEffectMode = originalFrame.Visual.boostpackEffectMode,
+                        frictionEffectMode = originalFrame.Visual.frictionEffectMode,
+                        dustEmission = originalFrame.Visual.dustEmission,
+                        spraypaintEmission = originalFrame.Visual.spraypaintEmission,
+                        ringEmission = originalFrame.Visual.ringEmission
+                    },
+
+                    Effects = new GhostFrame.GhostFrameEffects() {
+                        ringParticles = originalFrame.Effects.ringParticles,
+                        spraypaintParticles = originalFrame.Effects.spraypaintParticles,
+
+                        JumpEffects = originalFrame.Effects.JumpEffects,
+                        HighJumpEffects = originalFrame.Effects.HighJumpEffects,
+                        DoJumpEffects = originalFrame.Effects.DoJumpEffects,
+                        DoHighJumpEffects = originalFrame.Effects.DoHighJumpEffects
+                    }
+                };
+
+                foreach (GhostFrame.GhostFrameSFX frameSFX in originalFrame.SFX) {
+                    frameCopy.SFX.Add(new GhostFrame.GhostFrameSFX() {
+                        AudioClipID = frameSFX.AudioClipID,
+                        CollectionID = frameSFX.CollectionID,
+                        RandomPitchVariance = frameSFX.RandomPitchVariance,
+                        Voice = frameSFX.Voice
+                    });
+                }
+
+                ghostCopy.Frames.Add(frameCopy);
+            }
+
+            // Assign the replay to GhostPlayer and start it
+            var ghostManager = GhostManager.Instance;
+            if (ghostManager == null)
+            {
+                Debug.LogError("[ScoreAttack] GhostManager is not initialized.");
+                return;
+            }
+
+            var ghostPlayer = ghostManager.GhostPlayer;
+            ghostPlayer.Replay = ghostCopy;
+            ghostPlayer.Start();
+        }
+
+        private void EndGhostPlayback()
+        {
+            GhostManager.Instance.RemoveCurrentGhostState(); 
+            GhostManager.Instance.GhostRecorder.End();
+            GhostManager.Instance.GhostPlayer.End();
+        }
+
+        private void TryEndGhostPlaybackIfActive()
+        {
+            if (GhostManager.Instance.GhostPlayer.Active) { EndGhostPlayback(); }
+        }
+
+
+        // -------------
+
 
         // I'm not sure why i'm getting null refs so I'm overriding this method and taking out some stuff we're not using.
         public override void SetEncounterState(EncounterState setState)

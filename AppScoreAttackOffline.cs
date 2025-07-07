@@ -65,6 +65,14 @@ namespace ScoreAttack
 
             //If score battle is active, add a button to cancel here
 
+            // Enable/Disable new ghost function and settings
+            button = PhoneUIUtility.CreateSimpleButton("Ghost Replays...");
+            button.OnConfirm += () => {
+                // Launch Ghost Settings app.
+                MyPhone.OpenApp(typeof(AppGhost));
+            };
+            ScrollView.AddButton(button);
+
             button = PhoneUIUtility.CreateSimpleButton("Go to Stage...");
             button.OnConfirm += () => {
                 // Launch our stage select app.
@@ -151,6 +159,16 @@ namespace ScoreAttack
                 {
                     player.RemoveAllCuffs();
                 }
+
+                /*
+                // Clear Cuffs
+                var playerCuffs = UnityEngine.Object.FindObjectsOfType<PlayerCuff>()
+                .Where(cuff => cuff.GetState() != PlayerCuff.CuffState.Hidden);
+                foreach (var cuff in playerCuffs)
+                {
+                    cuff.SetState(PlayerCuff.CuffState.Hidden);
+                }
+                */
 
             };
             ScrollView.AddButton(button);
