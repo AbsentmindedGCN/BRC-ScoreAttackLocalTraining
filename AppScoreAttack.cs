@@ -21,7 +21,7 @@ namespace ScoreAttack
         private PhoneButton goToRespawnButton = null;
         private WantedManager wantedManager;
 
-        public bool testingPlugin = true; // If testing, allow the use of 1 minute score attacks
+        public bool testingPlugin = false; // If testing, allow the use of 1 minute score attacks
 
         //public readonly Sprite EncounterIcon = TextureUtility.LoadSprite("encounter.png"); // 128x128
 
