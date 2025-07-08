@@ -29,7 +29,7 @@ namespace ScoreAttackGhostSystem
         // Ghost Settings
         //public bool GhostAudioEnabled = true;
 
-        public bool Active {get; private set;} = false;
+        public bool Active { get; private set; } = false;
 
         public override void Start()
         {
@@ -233,11 +233,14 @@ namespace ScoreAttackGhostSystem
 
         } */
 
-        public void EndReplay() {
+        public void EndReplay()
+        {
             // Stop updating and go idle
             ReplayEnded = true;
-            if (ghostPlayerCharacter != null) { 
-                if (GhostSaveData.Instance.GhostEffect == GhostEffect.Transparent) {
+            if (ghostPlayerCharacter != null)
+            {
+                if (GhostSaveData.Instance.GhostEffect == GhostEffect.Transparent)
+                {
                     MakePlayerGhostLOD(ghostPlayerCharacter, 0.15f); // even more transparent to signal end of replay
                 }
                 ghostPlayerCharacter.anim.speed = 0f;
@@ -265,10 +268,10 @@ namespace ScoreAttackGhostSystem
                 return;
 
             var p = ghostPlayerCharacter;
-           
+
             p.moveStyle = frame.moveStyle;
             p.moveStyleEquipped = frame.equippedMoveStyle;
-            
+
             p.InitMovement(frame.moveStyle);
             p.SetMoveStyle(frame.moveStyle, true, false);
             p.SwitchToEquippedMovestyle(frame.UsingEquippedMoveStyle, false, true, false);
@@ -286,10 +289,10 @@ namespace ScoreAttackGhostSystem
             p.SetSpraycanState(frame.SpraycanState);
 
             p.SetBoostpackAndFrictionEffects(frame.Visual.boostpackEffectMode, frame.Visual.frictionEffectMode);
-            p.SetDustEmission(frame.Visual.dustEmission); 
-            p.SetDustSize(frame.Visual.dustSize); 
-            p.SetSpraypaintEmission(frame.Visual.spraypaintEmission); 
-            p.SetRingEmission((int)frame.Visual.ringEmission); 
+            p.SetDustEmission(frame.Visual.dustEmission);
+            p.SetDustSize(frame.Visual.dustSize);
+            p.SetSpraypaintEmission(frame.Visual.spraypaintEmission);
+            p.SetRingEmission((int)frame.Visual.ringEmission);
 
             float frameTime = frame.Animation.AtTime == -1f ? frame.Animation.Time : frame.Animation.AtTime;
             p.PlayAnim(frame.Animation.ID, frame.Animation.ForceOverwrite, frame.Animation.Instant, frameTime);
@@ -300,14 +303,32 @@ namespace ScoreAttackGhostSystem
             if (frame.Effects.DoJumpEffects) { p.DoJumpEffects(frame.Effects.JumpEffects); }
             if (frame.Effects.DoHighJumpEffects) { p.DoHighJumpEffects(frame.Effects.HighJumpEffects); }
 
-            if (AppGhostSettings.SoundMode != GhostSoundMode.Off) {
-                foreach (GhostFrame.GhostFrameSFX frameSFX in frame.SFX) {
-                    if (frameSFX.AudioClipID != AudioClipID.NONE) {
-                        if (frameSFX.Voice) { p.audioManager.PlayVoice(ref p.currentVoicePriority, p.character, frameSFX.AudioClipID, p.playerGameplayVoicesAudioSource, VoicePriority.MOVEMENT); }
-                        else {
-                            if (frameSFX.CollectionID != SfxCollectionID.NONE) { p.audioManager.PlaySfxGameplay(frameSFX.CollectionID, frameSFX.AudioClipID, p.playerOneShotAudioSource, frameSFX.RandomPitchVariance); }
-                            else { p.audioManager.PlaySfxGameplay(frame.moveStyle, frameSFX.AudioClipID, p.playerOneShotAudioSource, frameSFX.RandomPitchVariance); }
-                        } 
+            if (AppGhostSettings.SoundMode != GhostSoundMode.Off)
+            {
+                foreach (GhostFrame.GhostFrameSFX frameSFX in frame.SFX)
+                {
+                    if (frameSFX.AudioClipID != AudioClipID.NONE)
+                    {
+                        if (frameSFX.Voice)
+                        {
+                            p.audioManager.PlayVoice(ref p.currentVoicePriority, p.character, frameSFX.AudioClipID, p.playerGameplayVoicesAudioSource, VoicePriority.MOVEMENT);
+                        }
+                        else
+                        {
+                            if (frameSFX.CollectionID != SfxCollectionID.NONE)
+                            {
+                                // Filter out DefaultPlus SFX
+                                if (!((frameSFX.AudioClipID == AudioClipID.jump_special || frameSFX.AudioClipID == AudioClipID.launcher_woosh) && !frame.Effects.DoHighJumpEffects))
+                                {
+                                    p.audioManager.PlaySfxGameplay(frameSFX.CollectionID, frameSFX.AudioClipID, p.playerOneShotAudioSource, frameSFX.RandomPitchVariance);
+                                }
+
+                            }
+                            else
+                            {
+                                p.audioManager.PlaySfxGameplay(frame.moveStyle, frameSFX.AudioClipID, p.playerOneShotAudioSource, frameSFX.RandomPitchVariance);
+                            }
+                        }
                     }
                 }
             }
@@ -330,11 +351,15 @@ namespace ScoreAttackGhostSystem
             }
         }
 
-        public void ApplyInterpolationToWorld(bool skip, Vector3 interpPosition, Quaternion interpRotation, Vector3 interpPositionVisual, Quaternion interpRotationVisual) {
+        public void ApplyInterpolationToWorld(bool skip, Vector3 interpPosition, Quaternion interpRotation, Vector3 interpPositionVisual, Quaternion interpRotationVisual)
+        {
             var p = ghostPlayerCharacter;
-            if (skip) {
+            if (skip)
+            {
                 WorldHandler.instance.PlacePlayerAt(p, interpPosition, interpRotation, true);
-            } else {
+            }
+            else
+            {
                 p.transform.position = interpPosition;
                 p.transform.rotation = interpRotation;
             }

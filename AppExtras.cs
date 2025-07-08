@@ -43,13 +43,12 @@ namespace ScoreAttack
             {
                 // Cycle between Default and LLB and More
                 SFXMode = GetNextMode(SFXMode);
+                // Save the new setting
+                SaveState();
 
                 // Update UI
                 toggle.Label.SetText(GetViewerLabel());
                 CreateIconlessTitleBar(GetExtrasTitle());
-
-                // Save the new setting
-                SaveState();
             };
             ScrollView.AddButton(toggle);
 
@@ -108,6 +107,12 @@ namespace ScoreAttack
 
         }
 
+        public override void OnAppDisable()
+        {
+            Core.Instance.StartCoroutine(ScoreAttackManager.Encounter.LoadAnnouncerClips());
+            base.OnAppDisable();
+        }
+
         private static string GetViewerLabel()
         {
             string color = SFXMode == SFXToggle.Default ? "white" : "yellow";
@@ -148,6 +153,8 @@ namespace ScoreAttack
         private void SaveState()
         {
             ScoreAttackSaveData.Instance.ExtraSFXMode = SFXMode;
+            Core.Instance.SaveManager.SaveCurrentSaveSlot();
+            Debug.Log($"[ScoreAttack] Saved SFXMode: {SFXMode}");
         }
 
         private static string GetExtrasTitle()

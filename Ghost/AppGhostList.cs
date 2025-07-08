@@ -31,6 +31,8 @@ namespace ScoreAttack
             public DateTime Timestamp;
         }
 
+        private Dictionary<string, GhostEntry> CachedGhostEntries = new Dictionary<string, GhostEntry>();
+
         public static void Initialize()
         {
             PhoneAPI.RegisterApp<AppGhostList>("AppGhostList");
@@ -74,29 +76,39 @@ namespace ScoreAttack
 
             foreach (var file in ghostFiles)
             {
-                var fileName = Path.GetFileNameWithoutExtension(file).ToLower();
-                string cleanStageName = GetCleanStageName(currentStage).ToLowerInvariant();
-                /*
-                if (!fileName.StartsWith(cleanStageName))
-                    continue;
-                */
-                if (!fileName.StartsWith(cleanStageName + "-"))
+                if (CachedGhostEntries.TryGetValue(file, out GhostEntry entry))
                 {
-                    Debug.Log($"[ScoreAttack] Skipping {fileName} (doesn't start with '{cleanStageName}-')");
-                    continue;
+                    ghostEntries.Add(entry);
                 }
-
-                if (!TryLoadGhostMetadata(file, out Ghost ghost, out float timeLimit, out float score, out DateTime timestamp))
-                    continue;
-
-                ghostEntries.Add(new GhostEntry
+                else
                 {
-                    FilePath = file,
-                    Ghost = ghost,
-                    TimeLimit = timeLimit,
-                    Score = score,
-                    Timestamp = timestamp
-                });
+                    var fileName = Path.GetFileNameWithoutExtension(file).ToLower();
+                    string cleanStageName = GetCleanStageName(currentStage).ToLowerInvariant();
+                    /*
+                    if (!fileName.StartsWith(cleanStageName))
+                        continue;
+                    */
+                    if (!fileName.StartsWith(cleanStageName + "-"))
+                    {
+                        Debug.Log($"[ScoreAttack] Skipping {fileName} (doesn't start with '{cleanStageName}-')");
+                        continue;
+                    }
+
+                    if (!TryLoadGhostMetadata(file, out Ghost ghost, out float timeLimit, out float score, out DateTime timestamp))
+                        continue;
+
+                    GhostEntry fileEntry = new()
+                    {
+                        FilePath = file,
+                        Ghost = ghost,
+                        TimeLimit = timeLimit,
+                        Score = score,
+                        Timestamp = timestamp
+                    };
+
+                    ghostEntries.Add(fileEntry);
+                    CachedGhostEntries[file] = fileEntry;
+                }
             }
 
             /*
@@ -143,13 +155,16 @@ namespace ScoreAttack
                         return;
                     }
 
-                    if (GhostSaveData.Instance.GhostWarpMode == GhostWarpMode.ToGhost && ghost.FrameCount > 0) {
+                    if (GhostSaveData.Instance.GhostWarpMode == GhostWarpMode.ToGhost && ghost.FrameCount > 0)
+                    {
                         Vector3 startPoint = ghost.Frames[0].PlayerPosition;
                         Quaternion startRotation = ghost.Frames[0].PlayerRotation;
                         bool startGear = ghost.Frames[0].UsingEquippedMoveStyle;
                         WorldHandler.instance.PlacePlayerAt(MyPhone.player, startPoint, startRotation);
                         MyPhone.player.SwitchToEquippedMovestyle(startGear);
-                    } else {
+                    }
+                    else
+                    {
                         var stage = Core.Instance.BaseModule.CurrentStage;
                         var respawnPoint = ScoreAttackSaveData.Instance.GetRespawnPoint(stage);
                         if (respawnPoint == null)

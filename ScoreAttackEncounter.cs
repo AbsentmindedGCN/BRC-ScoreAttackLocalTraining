@@ -88,11 +88,12 @@ namespace ScoreAttack
             }
         }
 
-        private IEnumerator LoadAnnouncerClips()
+        // now accessed by AppExtras
+        public IEnumerator LoadAnnouncerClips()
         {
             string pluginPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
-            if (AppExtras.SFXMode == SFXToggle.LLB)
+            if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB)
             {
                 yield return LoadOgg(Path.Combine(pluginPath, "sfx/announcer_three.ogg"), clip => announcerThree = clip);
                 yield return LoadOgg(Path.Combine(pluginPath, "sfx/announcer_two.ogg"), clip => announcerTwo = clip);
@@ -102,7 +103,7 @@ namespace ScoreAttack
                 yield return LoadOgg(Path.Combine(pluginPath, "sfx/reward.ogg"), clip => announcerBest = clip);
                 yield return LoadOgg(Path.Combine(pluginPath, "sfx/special_activate.ogg"), clip => announcerGhost = clip);
             }
-            else if (AppExtras.SFXMode == SFXToggle.FZero)
+            else if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero)
             {
                 yield return LoadOgg(Path.Combine(pluginPath, "fzero/fzero_three.ogg"), clip => announcerThree = clip);
                 yield return LoadOgg(Path.Combine(pluginPath, "fzero/fzero_two.ogg"), clip => announcerTwo = clip);
@@ -114,14 +115,7 @@ namespace ScoreAttack
             }
             else
             {
-                // Just play LLB or something
-                yield return LoadOgg(Path.Combine(pluginPath, "sfx/announcer_three.ogg"), clip => announcerThree = clip);
-                yield return LoadOgg(Path.Combine(pluginPath, "sfx/announcer_two.ogg"), clip => announcerTwo = clip);
-                yield return LoadOgg(Path.Combine(pluginPath, "sfx/announcer_one.ogg"), clip => announcerOne = clip);
-                yield return LoadOgg(Path.Combine(pluginPath, "sfx/lobby_start_game.ogg"), clip => announcerStart = clip);
-                yield return LoadOgg(Path.Combine(pluginPath, "sfx/announcer_time_up.ogg"), clip => announcerEnd = clip);
-                yield return LoadOgg(Path.Combine(pluginPath, "sfx/reward.ogg"), clip => announcerBest = clip);
-                yield return LoadOgg(Path.Combine(pluginPath, "sfx/spectial_activate.ogg"), clip => announcerGhost = clip);
+                // Don't do anything
             }
 
             if (audioSource == null)
@@ -179,7 +173,7 @@ namespace ScoreAttack
         {
 
             // Sync settings with whatever the player chose in AppExtras
-            SetPlayOggSounds(AppExtras.SFXMode != SFXToggle.Default);
+            SetPlayOggSounds(ScoreAttackSaveData.Instance.ExtraSFXMode != SFXToggle.Default);
 
             // Initialize currentStage with the current stage
             currentStage = Core.Instance.BaseModule.CurrentStage;
@@ -308,39 +302,60 @@ namespace ScoreAttack
                 {
                     if (Mathf.CeilToInt(countdownTimer) == 3 && !hasPlayedThree)
                     {
-                        if (AppExtras.SFXMode == SFXToggle.LLB || AppExtras.SFXMode == SFXToggle.FZero)
+                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB || ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero)
                         {
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerThree, player.AudioManager.audioSources[3], 0f);
                         }
+                        else if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.DefaultPlus)
+                        {
+                            if (ScoreAttackSaveData.Instance.ExtraSFXMode != SFXToggle.Default)
+                            {
+                                player.AudioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.jump_special, player.playerOneShotAudioSource, 0f);
+                            }
+                        }
                         else
                         {
-                            player.AudioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.jump_special, player.playerOneShotAudioSource, 0f);
+                            //Don't play any sound for Default SFX Config
                         }
 
                         hasPlayedThree = true;
                     }
                     else if (Mathf.CeilToInt(countdownTimer) == 2 && !hasPlayedTwo)
                     {
-                        if (AppExtras.SFXMode == SFXToggle.LLB || AppExtras.SFXMode == SFXToggle.FZero)
+                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB || ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero)
                         {
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerTwo, player.AudioManager.audioSources[3], 0f);
                         }
+                        else if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.DefaultPlus)
+                        {
+                            if (ScoreAttackSaveData.Instance.ExtraSFXMode != SFXToggle.Default)
+                            {
+                                player.AudioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.jump_special, player.playerOneShotAudioSource, 0f);
+                            }
+                        }
                         else
                         {
-                            player.AudioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.jump_special, player.playerOneShotAudioSource, 0f);
+                            //Don't play any sound for Default SFX Config
                         }
 
                         hasPlayedTwo = true;
                     }
                     else if (Mathf.CeilToInt(countdownTimer) == 1 && !hasPlayedOne)
                     {
-                        if (AppExtras.SFXMode == SFXToggle.LLB || AppExtras.SFXMode == SFXToggle.FZero)
+                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB || ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero)
                         {
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerOne, player.AudioManager.audioSources[3], 0f);
                         }
+                        else if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.DefaultPlus)
+                        {
+                            if (ScoreAttackSaveData.Instance.ExtraSFXMode != SFXToggle.Default)
+                            {
+                                player.AudioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.jump_special, player.playerOneShotAudioSource, 0f);
+                            }
+                        }
                         else
                         {
-                            player.AudioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.jump_special, player.playerOneShotAudioSource, 0f);
+                            //Don't play any sound for Default SFX Config
                         }
 
                         hasPlayedOne = true;
@@ -359,13 +374,21 @@ namespace ScoreAttack
 
                     if (playCustomSounds)
                     {
-                        if (AppExtras.SFXMode == SFXToggle.LLB || AppExtras.SFXMode == SFXToggle.FZero)
+                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB || ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero)
                         {
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerStart, player.AudioManager.audioSources[3], 0f);
                         }
+                        else if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.DefaultPlus)
+                        {
+                            if (ScoreAttackSaveData.Instance.ExtraSFXMode != SFXToggle.Default)
+                            {
+                                player.audioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.launcher_woosh, player.playerOneShotAudioSource, 0f);
+
+                            }
+                        }
                         else
                         {
-                            player.audioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.launcher_woosh, player.playerOneShotAudioSource, 0f);
+                            //Don't play any sound for Default SFX Config
                         }
 
                         hasPlayedStart = true;
@@ -382,7 +405,7 @@ namespace ScoreAttack
                 {
                     if (playCustomSounds)
                     {
-                        if (AppExtras.SFXMode == SFXToggle.LLB || AppExtras.SFXMode == SFXToggle.FZero)
+                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB || ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero)
                         {
                             // Play LLB SFX
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerEnd, player.AudioManager.audioSources[3], 0f);
@@ -564,19 +587,27 @@ namespace ScoreAttack
 
                     if (playCustomSounds && !hasPlayedBest)
                     {
-                        if (AppExtras.SFXMode == SFXToggle.LLB || AppExtras.SFXMode == SFXToggle.FZero)
+                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB || ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero)
                         {
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerBest, player.AudioManager.audioSources[3], 0f);
                         }
+                        else if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.DefaultPlus)
+                        {
+                            if (ScoreAttackSaveData.Instance.ExtraSFXMode != SFXToggle.Default)
+                            {
+                                player.audioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.launcher_woosh, player.playerOneShotAudioSource, 0f);
+
+                            }
+                        }
                         else
                         {
-                            player.audioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.launcher_woosh, player.playerOneShotAudioSource, 0f);
+                            // Don't play any sound for Default SFX
                         }
 
                         hasPlayedBest = true;
                     }
 
-                    if (ghostBeaten && playCustomSounds && AppExtras.SFXMode != SFXToggle.Default && AppExtras.SFXMode != SFXToggle.DefaultPlus && !hasPlayedGhostBeaten)
+                    if (ghostBeaten && playCustomSounds && ScoreAttackSaveData.Instance.ExtraSFXMode != SFXToggle.Default && ScoreAttackSaveData.Instance.ExtraSFXMode != SFXToggle.DefaultPlus && !hasPlayedGhostBeaten)
                     {
                         player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerGhost, player.AudioManager.audioSources[3], 0f);
                         hasPlayedGhostBeaten = true;
@@ -588,7 +619,7 @@ namespace ScoreAttack
                 {
                     gameplay.targetScoreLabel.text = "Ghost Beat!";
 
-                    if (playCustomSounds && AppExtras.SFXMode != SFXToggle.Default && AppExtras.SFXMode != SFXToggle.DefaultPlus && !hasPlayedGhostBeaten)
+                    if (playCustomSounds && ScoreAttackSaveData.Instance.ExtraSFXMode != SFXToggle.Default && ScoreAttackSaveData.Instance.ExtraSFXMode != SFXToggle.DefaultPlus && !hasPlayedGhostBeaten)
                     {
                         player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerGhost, player.AudioManager.audioSources[3], 0f);
                         hasPlayedGhostBeaten = true;
@@ -895,16 +926,18 @@ namespace ScoreAttack
                     moveStyle = originalFrame.moveStyle,
                     equippedMoveStyle = originalFrame.equippedMoveStyle,
                     UsingEquippedMoveStyle = originalFrame.UsingEquippedMoveStyle,
-                    
-                    Animation = new GhostFrame.GhostFrameAnimation() {
+
+                    Animation = new GhostFrame.GhostFrameAnimation()
+                    {
                         ID = originalFrame.Animation.ID,
                         Time = originalFrame.Animation.Time,
                         ForceOverwrite = originalFrame.Animation.ForceOverwrite,
                         Instant = originalFrame.Animation.Instant,
                         AtTime = originalFrame.Animation.AtTime
                     },
-                    
-                    Visual = new GhostFrame.GhostFrameVisual() {
+
+                    Visual = new GhostFrame.GhostFrameVisual()
+                    {
                         Position = originalFrame.Visual.Position,
                         Rotation = originalFrame.Visual.Rotation,
 
@@ -915,7 +948,8 @@ namespace ScoreAttack
                         ringEmission = originalFrame.Visual.ringEmission
                     },
 
-                    Effects = new GhostFrame.GhostFrameEffects() {
+                    Effects = new GhostFrame.GhostFrameEffects()
+                    {
                         ringParticles = originalFrame.Effects.ringParticles,
                         spraypaintParticles = originalFrame.Effects.spraypaintParticles,
 
@@ -926,8 +960,10 @@ namespace ScoreAttack
                     }
                 };
 
-                foreach (GhostFrame.GhostFrameSFX frameSFX in originalFrame.SFX) {
-                    frameCopy.SFX.Add(new GhostFrame.GhostFrameSFX() {
+                foreach (GhostFrame.GhostFrameSFX frameSFX in originalFrame.SFX)
+                {
+                    frameCopy.SFX.Add(new GhostFrame.GhostFrameSFX()
+                    {
                         AudioClipID = frameSFX.AudioClipID,
                         CollectionID = frameSFX.CollectionID,
                         RandomPitchVariance = frameSFX.RandomPitchVariance,
@@ -953,7 +989,7 @@ namespace ScoreAttack
 
         private void EndGhostPlayback()
         {
-            GhostManager.Instance.RemoveCurrentGhostState(); 
+            GhostManager.Instance.RemoveCurrentGhostState();
             GhostManager.Instance.GhostRecorder.End();
             GhostManager.Instance.GhostPlayer.End();
         }

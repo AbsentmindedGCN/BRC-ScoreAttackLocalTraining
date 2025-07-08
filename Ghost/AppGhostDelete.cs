@@ -29,6 +29,8 @@ namespace ScoreAttack
             public DateTime Timestamp;
         }
 
+        private Dictionary<string, GhostEntry> CachedGhostEntries = new Dictionary<string, GhostEntry>();
+
         public static void Initialize()
         {
             PhoneAPI.RegisterApp<AppGhostDelete>("AppGhostDelete");
@@ -138,29 +140,40 @@ namespace ScoreAttack
 
             foreach (var file in ghostFiles)
             {
-                var fileName = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
-                string cleanStageName = GetCleanStageName(currentStage).ToLowerInvariant();
-                /*
-                if (!fileName.StartsWith(cleanStageName))
-                    continue;
-                */
-                if (!fileName.StartsWith(cleanStageName + "-"))
+                if (CachedGhostEntries.TryGetValue(file, out GhostEntry entry))
                 {
-                    Debug.Log($"[ScoreAttack] Skipping {fileName} (doesn't start with '{cleanStageName}-')");
-                    continue;
+                    ghostEntries.Add(entry);
+                }
+                else
+                {
+                    var fileName = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
+                    string cleanStageName = GetCleanStageName(currentStage).ToLowerInvariant();
+                    /*
+                    if (!fileName.StartsWith(cleanStageName))
+                        continue;
+                    */
+                    if (!fileName.StartsWith(cleanStageName + "-"))
+                    {
+                        Debug.Log($"[ScoreAttack] Skipping {fileName} (doesn't start with '{cleanStageName}-')");
+                        continue;
+                    }
+
+                    if (!TryLoadGhostMetadata(file, out Ghost ghost, out float timeLimit, out float score, out DateTime timestamp))
+                        continue;
+
+                    GhostEntry fileEntry = new()
+                    {
+                        FilePath = file,
+                        Ghost = ghost,
+                        TimeLimit = timeLimit,
+                        Score = score,
+                        Timestamp = timestamp
+                    };
+
+                    ghostEntries.Add(fileEntry);
+                    CachedGhostEntries[file] = fileEntry;
                 }
 
-                if (!TryLoadGhostMetadata(file, out Ghost ghost, out float timeLimit, out float score, out DateTime timestamp))
-                    continue;
-
-                ghostEntries.Add(new GhostEntry
-                {
-                    FilePath = file,
-                    Ghost = ghost,
-                    TimeLimit = timeLimit,
-                    Score = score,
-                    Timestamp = timestamp
-                });
             }
 
             /*
@@ -191,7 +204,10 @@ namespace ScoreAttack
                     foreach (var entry in ghostEntries)
                     {
                         if (File.Exists(entry.FilePath))
+                        {
+                            CachedGhostEntries.Remove(entry.FilePath);
                             File.Delete(entry.FilePath);
+                        }
                     }
 
                     Core.Instance.UIManager.ShowNotification("All ghosts deleted.");
