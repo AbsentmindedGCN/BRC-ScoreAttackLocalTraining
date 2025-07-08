@@ -36,4 +36,4 @@ We also encourage you to join the rest of the score battlers in the [Slop Crew D
 
 # Credits/Special Thanks
 
-This plugin is built off [CommonAPI](https://github.com/LazyDuchess/BRC-CommonAPI) and [CommonAPI-Sample](https://github.com/LazyDuchess/BRC-CommonAPI-Sample). I take absolutely no credit for this work. Special thanks to SoftGoat, NotNite, Yuri, Lazy Duchess, and SpecialFX for inspiration, programming, and testing. Extra extra special thanks to Lazy Duchess and SoftGoat. This plugin would not exist without them. Thank you SO much for all your help with this project!!
+This plugin is built off [CommonAPI](https://github.com/LazyDuchess/BRC-CommonAPI) and [CommonAPI-Sample](https://github.com/LazyDuchess/BRC-CommonAPI-Sample). I take absolutely no credit for this work. Special thanks to goatgirl, NotNite, Yuri, Lazy Duchess, and SpecialFX for inspiration, programming, and testing. Extra extra special thanks to goatgirl and Lazy Duchess. This plugin would not exist without them. Thank you SO much for all your help with this project!!
