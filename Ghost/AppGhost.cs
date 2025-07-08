@@ -14,6 +14,7 @@ using ScoreAttackGhostSystem;
 namespace ScoreAttack
 {
     public enum GhostDisplayMode { Hide, Show }
+    public enum GhostWarpMode { Respawn, ToGhost }
 
     public class AppGhost : CustomApp
     {
@@ -68,7 +69,39 @@ namespace ScoreAttack
 
             //AddEnumButton("Display Ghosts", () => AppGhostSettings.DisplayMode, GetNextDisplayMode, m => AppGhostSettings.DisplayMode = m);
             AddEnumButton("Display Ghosts", () => GhostSaveData.Instance.GhostDisplayMode, GetNextDisplayMode, m => GhostSaveData.Instance.GhostDisplayMode = m);
-        
+            AddEnumButton("Start Position", () => GhostSaveData.Instance.GhostWarpMode, GetNextWarpMode, m => GhostSaveData.Instance.GhostWarpMode = m);
+
+            // Add Cancel Run button, for convenience
+            button = PhoneUIUtility.CreateSimpleButton("Cancel Run");
+            button.OnConfirm += () =>
+            {
+                // New Encounter
+                Debug.Log("Cancelling Active Battle...");
+
+                ScoreAttackManager.LoadedExternalGhost = null;
+                ScoreAttackManager.ExternalGhostLoadedFromGhostList = false; // check
+
+                bool isScoreBattleActive = ScoreAttackEncounter.IsScoreAttackActive();
+                if (isScoreBattleActive)
+                {
+                    // End the Score Battle
+                    ScoreAttackEncounter scoreAttackActiveEncounter = FindObjectOfType<ScoreAttackEncounter>();
+                    scoreAttackActiveEncounter.EndScoreAttack();
+
+                    //Save on ending..?
+                    Core.Instance.SaveManager.SaveCurrentSaveSlot();
+                    //ScoreAttack.ScoreAttackEncounter.EndScoreAttack();
+                }
+                else
+                {
+                    Core.Instance.UIManager.ShowNotification("There is no ongoing Score Battle run!");
+                }
+
+            };
+            button.LabelUnselectedColor = UnityEngine.Color.black;
+            button.LabelSelectedColor = UnityEngine.Color.red;
+            ScrollView.AddButton(button);
+
         }
 
             // ------------------
@@ -298,7 +331,9 @@ namespace ScoreAttack
                 var nextValue = getNext(current);
                 setValue(nextValue);
                 button.Label.SetText($"{label}\n<size=50%><color={GetColorForValue(nextValue)}>{FormatEnum(nextValue)}</color></size>");
-                GhostSaveData.Instance.GhostDisplayMode = (GhostDisplayMode)(object)nextValue; // ensure persistence
+                
+                // already directly set in GhostSaveData.Instance via setValue
+                //GhostSaveData.Instance.GhostDisplayMode = (GhostDisplayMode)(object)nextValue; // ensure persistence
             };
             ScrollView.AddButton(button);
         }
@@ -309,6 +344,8 @@ namespace ScoreAttack
             {
                 case GhostDisplayMode.Hide: return "Hide Ghost Playback During Runs";
                 case GhostDisplayMode.Show: return "Show Ghost Playback During Runs";
+                case GhostWarpMode.Respawn: return "Your Respawn Point";
+                case GhostWarpMode.ToGhost: return "Ghost Start Point";
                 default: return val.ToString();
             }
         }
@@ -321,12 +358,15 @@ namespace ScoreAttack
                     return "red";
                 case GhostDisplayMode.Show:
                     return "green";
+                case GhostWarpMode.Respawn:
+                case GhostWarpMode.ToGhost: 
+                    return "orange"; 
                 default:
                     return "white";
             }
         }
 
         private static GhostDisplayMode GetNextDisplayMode(GhostDisplayMode mode) => (GhostDisplayMode)(((int)mode + 1) % Enum.GetValues(typeof(GhostDisplayMode)).Length);
-
+        private static GhostWarpMode GetNextWarpMode(GhostWarpMode mode) => (GhostWarpMode)(((int)mode + 1) % Enum.GetValues(typeof(GhostWarpMode)).Length);
     }
 }

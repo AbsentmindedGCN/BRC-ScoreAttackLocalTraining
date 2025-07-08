@@ -97,6 +97,9 @@ namespace ScoreAttack
                     Core.Instance.UIManager.ShowNotification("Failed to export personal best ghost data.");
                 }
             };
+
+            exportButton.LabelUnselectedColor = UnityEngine.Color.black;
+            exportButton.LabelSelectedColor = UnityEngine.Color.red;
             ScrollView.AddButton(exportButton);
 
             // Import Ghost Save Data
@@ -145,6 +148,8 @@ namespace ScoreAttack
                     Core.Instance.UIManager.ShowNotification("Failed to import personal best ghost data.");
                 }
             };
+            importButton.LabelUnselectedColor = UnityEngine.Color.black;
+            importButton.LabelSelectedColor = UnityEngine.Color.red;
             ScrollView.AddButton(importButton);
 
             // Clear All Ghost Data

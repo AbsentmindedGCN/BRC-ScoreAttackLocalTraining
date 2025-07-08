@@ -23,6 +23,9 @@ namespace ScoreAttack
         public GhostSoundMode GhostSoundMode = GhostSoundMode.On;
         public GhostModel GhostModel = GhostModel.Self;
         public GhostEffect GhostEffect = GhostEffect.Transparent;
+        public GhostWarpMode GhostWarpMode = GhostWarpMode.ToGhost; 
+
+        public bool CopiedPackagedGhosts = false; 
 
         public class GhostData
         {
@@ -75,6 +78,8 @@ namespace ScoreAttack
         public override void Initialize()
         {
             BestGhostsByStage.Clear();
+            CopyPackagedGhostsToDocuments();
+            CopiedPackagedGhosts = true;
         }
 
         public override void Read(BinaryReader reader2)
@@ -85,6 +90,8 @@ namespace ScoreAttack
             BinaryReader reader = new BinaryReader(dcmp);
             
             var version = reader.ReadByte();
+            if (version >= 3) { CopiedPackagedGhosts = reader.ReadBoolean(); } 
+
             if (version == 0) { // Legacy version
                 var ghostCount = reader.ReadInt32();
                 for (int i = 0; i < ghostCount; i++)
@@ -139,9 +146,38 @@ namespace ScoreAttack
                     }
                     BestGhostsByStage[stage] = ghostData;
                 }
+            } else if (version == 3) {
+
+                // Read settings
+                GhostSaveMode = (GhostSaveMode)reader.ReadInt32();
+                GhostDisplayMode = (GhostDisplayMode)reader.ReadInt32();
+                GhostSoundMode = (GhostSoundMode)reader.ReadInt32();
+                GhostModel = (GhostModel)reader.ReadInt32();
+                GhostEffect = (GhostEffect)reader.ReadInt32();
+                GhostWarpMode = (GhostWarpMode)reader.ReadInt32();
+
+                var ghostCount = reader.ReadInt32();
+                for (int i = 0; i < ghostCount; i++)
+                {
+                    var stage = (Stage)reader.ReadInt32();
+                    var ghostData = new GhostData();
+                    var timeLimitCount = reader.ReadInt32();
+                    for (int j = 0; j < timeLimitCount; j++)
+                    {
+                        var timeLimit = reader.ReadSingle();
+                        var ghost = ReadSingleGhost(reader);
+                        ghostData.SetGhost(timeLimit, ghost);
+                    }
+                    BestGhostsByStage[stage] = ghostData;
+                }
             }
 
             reader.Close();
+
+            if (!CopiedPackagedGhosts) {
+                CopyPackagedGhostsToDocuments(); 
+                CopiedPackagedGhosts = true;
+            }
         }
 
         public override void Write(BinaryWriter writer2)
@@ -149,7 +185,8 @@ namespace ScoreAttack
             GZipStream cmp = new GZipStream(writer2.BaseStream, CompressionMode.Compress);
             BinaryWriter writer = new BinaryWriter(cmp);
 
-            writer.Write((byte)2); // save file version
+            writer.Write((byte)3); // save file version
+            writer.Write((bool)CopiedPackagedGhosts); 
 
             //Ghost Settings for App
             writer.Write((int)GhostSaveMode);
@@ -157,6 +194,7 @@ namespace ScoreAttack
             writer.Write((int)GhostSoundMode);
             writer.Write((int)GhostModel);
             writer.Write((int)GhostEffect);
+            writer.Write((int)GhostWarpMode); 
 
             // Write Ghost data
             writer.Write(BestGhostsByStage.Count);
@@ -425,6 +463,53 @@ namespace ScoreAttack
             }
         }
 
+        public void CopyPackagedGhostsToDocuments()
+        {
+            try
+            {
+                string copyDirectory = Path.Combine(ScoreAttackPlugin.Instance.Directory, "ghost");
+                string baseFolderPath = GetSaveLocation();
+                string pasteDirectory = Path.Combine(baseFolderPath, "GhostSaveData");
+
+                // Ensure destination folder exists
+                if (!Directory.Exists(pasteDirectory))
+                {
+                    Directory.CreateDirectory(pasteDirectory);
+                    Debug.Log($"[ScoreAttack] Created destination directory: {pasteDirectory}");
+                }
+
+                // If source folder doesn't exist, optionally create it and exit early
+                if (!Directory.Exists(copyDirectory))
+                {
+                    Directory.CreateDirectory(copyDirectory);
+                    Debug.LogWarning($"[ScoreAttack] Ghost source directory not found, created empty directory: {copyDirectory}");
+                    return;
+                }
+
+                int copiedCount = 0;
+                foreach (var file in Directory.GetFiles(copyDirectory, "*.ghost"))
+                {
+                    string destinationFile = Path.Combine(pasteDirectory, Path.GetFileName(file));
+                    if (!File.Exists(destinationFile))
+                    {
+                        File.Copy(file, destinationFile);
+                        copiedCount++;
+                    }
+                }
+
+                Debug.Log($"[ScoreAttack] Successfully copied {copiedCount} packaged ghost file(s) to: {pasteDirectory}");
+
+                // Only set flag if the operation completed without exception
+                CopiedPackagedGhosts = true;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[ScoreAttack] Failed to copy packaged ghosts: {ex}");
+            }
+        }
+
+
+
         private static string GetCleanStageName(Stage stage)
         {
             return stage switch
@@ -441,8 +526,9 @@ namespace ScoreAttack
             };
         }
 
-
-        public string GetSaveLocation() { return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments, Environment.SpecialFolderOption.DoNotVerify), "Bomb Rush Cyberfunk Modding"); }
-
+        public string GetSaveLocation() { 
+            //return base.GetSaveLocation(SaveLocations.Documents); 
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments, Environment.SpecialFolderOption.DoNotVerify), "Bomb Rush Cyberfunk Modding");
+        }
     }
 }

@@ -143,15 +143,23 @@ namespace ScoreAttack
                         return;
                     }
 
-                    var stage = Core.Instance.BaseModule.CurrentStage;
-                    var respawnPoint = ScoreAttackSaveData.Instance.GetRespawnPoint(stage);
-                    if (respawnPoint == null)
-                    {
-                        Core.Instance.UIManager.ShowNotification("Please set a respawn point first!\n<size=50%>It's at the bottom of the app menu!</size>");
-                        return;
-                    }
+                    if (GhostSaveData.Instance.GhostWarpMode == GhostWarpMode.ToGhost && ghost.FrameCount > 0) {
+                        Vector3 startPoint = ghost.Frames[0].PlayerPosition;
+                        Quaternion startRotation = ghost.Frames[0].PlayerRotation;
+                        bool startGear = ghost.Frames[0].UsingEquippedMoveStyle;
+                        WorldHandler.instance.PlacePlayerAt(MyPhone.player, startPoint, startRotation);
+                        MyPhone.player.SwitchToEquippedMovestyle(startGear);
+                    } else {
+                        var stage = Core.Instance.BaseModule.CurrentStage;
+                        var respawnPoint = ScoreAttackSaveData.Instance.GetRespawnPoint(stage);
+                        if (respawnPoint == null)
+                        {
+                            Core.Instance.UIManager.ShowNotification("Please set a respawn point first!\n<size=50%>It's at the bottom of the app menu!</size>");
+                            return;
+                        }
 
-                    respawnPoint.ApplyToPlayer(MyPhone.player);
+                        respawnPoint.ApplyToPlayer(MyPhone.player);
+                    }
 
                     if (ScoreAttackEncounter.IsScoreAttackActive())
                     {

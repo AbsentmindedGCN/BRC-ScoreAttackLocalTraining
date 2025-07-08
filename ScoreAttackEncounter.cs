@@ -64,6 +64,7 @@ namespace ScoreAttack
         private AudioClip announcerStart;
         private AudioClip announcerEnd;
         private AudioClip announcerBest;
+        private AudioClip announcerGhost;
         private AudioSource audioSource;
         private bool announcerReady = false;
         private bool hasPlayedThree = false;
@@ -72,6 +73,7 @@ namespace ScoreAttack
         private bool hasPlayedStart = false;
         private bool hasPlayedEnd = false;
         private bool hasPlayedBest = false;
+        private bool hasPlayedGhostBeaten = false;
 
         // Custom Time
         public static float customDeltaTime
@@ -97,7 +99,8 @@ namespace ScoreAttack
                 yield return LoadOgg(Path.Combine(pluginPath, "sfx/announcer_one.ogg"), clip => announcerOne = clip);
                 yield return LoadOgg(Path.Combine(pluginPath, "sfx/lobby_start_game.ogg"), clip => announcerStart = clip);
                 yield return LoadOgg(Path.Combine(pluginPath, "sfx/announcer_time_up.ogg"), clip => announcerEnd = clip);
-                yield return LoadOgg(Path.Combine(pluginPath, "sfx/express.ogg"), clip => announcerBest = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "sfx/reward.ogg"), clip => announcerBest = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "sfx/special_activate.ogg"), clip => announcerGhost = clip);
             }
             else if (AppExtras.SFXMode == SFXToggle.FZero)
             {
@@ -107,7 +110,7 @@ namespace ScoreAttack
                 yield return LoadOgg(Path.Combine(pluginPath, "fzero/fzero_go.ogg"), clip => announcerStart = clip);
                 yield return LoadOgg(Path.Combine(pluginPath, "fzero/fzero_finish.ogg"), clip => announcerEnd = clip);
                 yield return LoadOgg(Path.Combine(pluginPath, "fzero/fzero_courserecord.ogg"), clip => announcerBest = clip);
-                //yield return LoadOgg(Path.Combine(pluginPath, "fzero/fzero_goal.ogg"), clip => announcerBest = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "fzero/fzero_goal.ogg"), clip => announcerGhost = clip);
             }
             else
             {
@@ -117,7 +120,8 @@ namespace ScoreAttack
                 yield return LoadOgg(Path.Combine(pluginPath, "sfx/announcer_one.ogg"), clip => announcerOne = clip);
                 yield return LoadOgg(Path.Combine(pluginPath, "sfx/lobby_start_game.ogg"), clip => announcerStart = clip);
                 yield return LoadOgg(Path.Combine(pluginPath, "sfx/announcer_time_up.ogg"), clip => announcerEnd = clip);
-                yield return LoadOgg(Path.Combine(pluginPath, "sfx/express.ogg"), clip => announcerBest = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "sfx/reward.ogg"), clip => announcerBest = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "sfx/spectial_activate.ogg"), clip => announcerGhost = clip);
             }
 
             if (audioSource == null)
@@ -551,19 +555,10 @@ namespace ScoreAttack
                 // --- Begin Ghost vs PB Display Logic ---
                 bool ghostLoaded = ScoreAttackManager.ExternalGhostLoadedFromGhostList;
                 float ghostScore = ScoreAttackManager.ExternalGhostScore;
+                bool ghostBeaten = ghostLoaded && ScoreGot > ghostScore && ghostScore >= 0f;
 
-                if (ghostLoaded && ScoreGot > ghostScore && ghostScore >= 0f)
-                {
-                    gameplay.targetScoreLabel.text = "Ghost Beaten!";
-
-                    // Optional jingle for beating ghost
-                    if (playCustomSounds && !hasPlayedBest)
-                    {
-                        player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerBest, player.AudioManager.audioSources[3], 0f);
-                        hasPlayedBest = true;
-                    }
-                }
-                else if (isNewBestDisplayed)
+                // Show New Best Message, has priority over others
+                if (isNewBestDisplayed)
                 {
                     gameplay.targetScoreLabel.text = "New Best!";
 
@@ -572,22 +567,40 @@ namespace ScoreAttack
                         if (AppExtras.SFXMode == SFXToggle.LLB || AppExtras.SFXMode == SFXToggle.FZero)
                         {
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerBest, player.AudioManager.audioSources[3], 0f);
-                            hasPlayedBest = true;
                         }
                         else
                         {
                             player.audioManager.PlaySfxGameplay(SfxCollectionID.GenericMovementSfx, AudioClipID.launcher_woosh, player.playerOneShotAudioSource, 0f);
-                            hasPlayedBest = true;
                         }
+
+                        hasPlayedBest = true;
+                    }
+
+                    if (ghostBeaten && playCustomSounds && AppExtras.SFXMode != SFXToggle.Default && AppExtras.SFXMode != SFXToggle.DefaultPlus && !hasPlayedGhostBeaten)
+                    {
+                        player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerGhost, player.AudioManager.audioSources[3], 0f);
+                        hasPlayedGhostBeaten = true;
+                    }
+                }
+
+                // Show Ghost Beaten if Ghost is Beaten
+                else if (ghostBeaten)
+                {
+                    gameplay.targetScoreLabel.text = "Ghost Beat!";
+
+                    if (playCustomSounds && AppExtras.SFXMode != SFXToggle.Default && AppExtras.SFXMode != SFXToggle.DefaultPlus && !hasPlayedGhostBeaten)
+                    {
+                        player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerGhost, player.AudioManager.audioSources[3], 0f);
+                        hasPlayedGhostBeaten = true;
                     }
                 }
 
                 //Update UI
                 else
                 {
-                    if (ScoreAttackManager.ExternalGhostLoadedFromGhostList && ScoreAttackManager.ExternalGhostScore >= 0f)
+                    if (ghostLoaded && ghostScore >= 0f)
                     {
-                        gameplay.targetScoreLabel.text = FormattingUtility.FormatPlayerScore(cultureInfo, ScoreAttackManager.ExternalGhostScore);
+                        gameplay.targetScoreLabel.text = FormattingUtility.FormatPlayerScore(cultureInfo, ghostScore);
                     }
                     else
                     {
@@ -595,21 +608,17 @@ namespace ScoreAttack
                     }
 
                     hasPlayedBest = false;
+                    hasPlayedGhostBeaten = false;
                 }
 
-
+                // Always show current score
                 gameplay.totalScoreLabel.text = FormattingUtility.FormatPlayerScore(cultureInfo, ScoreGot);
-                //gameplay.targetScoreTitleLabel.text = "Personal Best:";
-                if (ScoreAttackManager.ExternalGhostLoadedFromGhostList == true)
-                {
-                    gameplay.targetScoreTitleLabel.text = "Ghost Score:";
-                }
-                else
-                {
-                    gameplay.targetScoreTitleLabel.text = "Personal Best:";
-                }
+
+                // Score label title
+                gameplay.targetScoreTitleLabel.text = ghostLoaded ? "Ghost Score:" : "Personal Best:";
                 gameplay.totalScoreTitleLabel.text = (timeLimit / 60) + " " + "Min." + " " + "Score:";
             }
+
         }
 
 
