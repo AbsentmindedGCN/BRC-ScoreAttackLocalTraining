@@ -16,6 +16,10 @@ namespace ScoreAttack
     {
         public static GhostSaveData Instance { get; private set; }
 
+        // REMEMBER TO UPDATE THIS - fallback for ReadSingleGhost() 
+        // affects both GhostSaveData and ExportedGhostData now
+        public static readonly int currentSaveVersion = 4;
+
         public Dictionary<Stage, GhostData> BestGhostsByStage = new();
 
         public GhostSaveMode GhostSaveMode = GhostSaveMode.Enabled;
@@ -23,9 +27,10 @@ namespace ScoreAttack
         public GhostSoundMode GhostSoundMode = GhostSoundMode.On;
         public GhostModel GhostModel = GhostModel.Self;
         public GhostEffect GhostEffect = GhostEffect.Transparent;
-        public GhostWarpMode GhostWarpMode = GhostWarpMode.ToGhost; 
+        public GhostWarpMode GhostWarpMode = GhostWarpMode.ToGhost;
+        public GhostScoreMode GhostScoreMode = GhostScoreMode.Final;
 
-        public bool CopiedPackagedGhosts = false; 
+        public bool CopiedPackagedGhosts = false;
 
         public class GhostData
         {
@@ -56,11 +61,11 @@ namespace ScoreAttack
 
         public class ExportedGhostData
         {
-            public Ghost Ghost; 
+            public Ghost Ghost;
             public Stage Stage;
             public float TimeLimit;
             public float GhostScore;
-            
+
             public ExportedGhostData(Ghost ghost, Stage stage, float timeLimit, float ghostScore)
             {
                 Ghost = ghost;
@@ -88,11 +93,12 @@ namespace ScoreAttack
 
             GZipStream dcmp = new GZipStream(reader2.BaseStream, CompressionMode.Decompress);
             BinaryReader reader = new BinaryReader(dcmp);
-            
+
             var version = reader.ReadByte();
-            if (version >= 3) { CopiedPackagedGhosts = reader.ReadBoolean(); } 
+            if (version >= 3) { CopiedPackagedGhosts = reader.ReadBoolean(); }
 
-            if (version == 0) { // Legacy version
+            if (version == 0)
+            { // Legacy version
                 var ghostCount = reader.ReadInt32();
                 for (int i = 0; i < ghostCount; i++)
                 {
@@ -102,12 +108,14 @@ namespace ScoreAttack
                     for (int j = 0; j < timeLimitCount; j++)
                     {
                         var timeLimit = reader.ReadSingle();
-                        var ghost = new Ghost(60f); // You can customize FPS here if needed
+                        var ghost = new Ghost(60f); // FPS
                         ghostData.SetGhost(timeLimit, ghost);
                     }
                     BestGhostsByStage[stage] = ghostData;
                 }
-            } else if (version == 1) {
+            }
+            else if (version == 1)
+            {
 
                 var ghostCount = reader.ReadInt32();
                 for (int i = 0; i < ghostCount; i++)
@@ -118,12 +126,14 @@ namespace ScoreAttack
                     for (int j = 0; j < timeLimitCount; j++)
                     {
                         var timeLimit = reader.ReadSingle();
-                        var ghost = ReadSingleGhost(reader);
+                        var ghost = ReadSingleGhost(reader, version);
                         ghostData.SetGhost(timeLimit, ghost);
                     }
                     BestGhostsByStage[stage] = ghostData;
                 }
-            } else if (version == 2) {
+            }
+            else if (version == 2)
+            {
 
                 // Read settings
                 GhostSaveMode = (GhostSaveMode)reader.ReadInt32();
@@ -141,12 +151,14 @@ namespace ScoreAttack
                     for (int j = 0; j < timeLimitCount; j++)
                     {
                         var timeLimit = reader.ReadSingle();
-                        var ghost = ReadSingleGhost(reader);
+                        var ghost = ReadSingleGhost(reader, version);
                         ghostData.SetGhost(timeLimit, ghost);
                     }
                     BestGhostsByStage[stage] = ghostData;
                 }
-            } else if (version == 3) {
+            }
+            else if (version == 3)
+            {
 
                 // Read settings
                 GhostSaveMode = (GhostSaveMode)reader.ReadInt32();
@@ -165,17 +177,46 @@ namespace ScoreAttack
                     for (int j = 0; j < timeLimitCount; j++)
                     {
                         var timeLimit = reader.ReadSingle();
-                        var ghost = ReadSingleGhost(reader);
+                        var ghost = ReadSingleGhost(reader, version);
+                        ghostData.SetGhost(timeLimit, ghost);
+                    }
+                    BestGhostsByStage[stage] = ghostData;
+                }
+            }
+            else if (version == 4)
+            {
+
+                // Read settings
+                GhostSaveMode = (GhostSaveMode)reader.ReadInt32();
+                GhostDisplayMode = (GhostDisplayMode)reader.ReadInt32();
+                GhostSoundMode = (GhostSoundMode)reader.ReadInt32();
+                GhostModel = (GhostModel)reader.ReadInt32();
+                GhostEffect = (GhostEffect)reader.ReadInt32();
+                GhostWarpMode = (GhostWarpMode)reader.ReadInt32();
+                GhostScoreMode = (GhostScoreMode)reader.ReadInt32();
+
+                var ghostCount = reader.ReadInt32();
+                for (int i = 0; i < ghostCount; i++)
+                {
+                    var stage = (Stage)reader.ReadInt32();
+                    var ghostData = new GhostData();
+                    var timeLimitCount = reader.ReadInt32();
+                    for (int j = 0; j < timeLimitCount; j++)
+                    {
+                        var timeLimit = reader.ReadSingle();
+                        var ghost = ReadSingleGhost(reader, version);
                         ghostData.SetGhost(timeLimit, ghost);
                     }
                     BestGhostsByStage[stage] = ghostData;
                 }
             }
 
+
             reader.Close();
 
-            if (!CopiedPackagedGhosts) {
-                CopyPackagedGhostsToDocuments(); 
+            if (!CopiedPackagedGhosts)
+            {
+                CopyPackagedGhostsToDocuments();
                 CopiedPackagedGhosts = true;
             }
         }
@@ -185,8 +226,8 @@ namespace ScoreAttack
             GZipStream cmp = new GZipStream(writer2.BaseStream, CompressionMode.Compress);
             BinaryWriter writer = new BinaryWriter(cmp);
 
-            writer.Write((byte)3); // save file version
-            writer.Write((bool)CopiedPackagedGhosts); 
+            writer.Write((byte)currentSaveVersion); // save file version
+            writer.Write((bool)CopiedPackagedGhosts);
 
             //Ghost Settings for App
             writer.Write((int)GhostSaveMode);
@@ -194,7 +235,8 @@ namespace ScoreAttack
             writer.Write((int)GhostSoundMode);
             writer.Write((int)GhostModel);
             writer.Write((int)GhostEffect);
-            writer.Write((int)GhostWarpMode); 
+            writer.Write((int)GhostWarpMode);
+            writer.Write((int)GhostScoreMode);
 
             // Write Ghost data
             writer.Write(BestGhostsByStage.Count);
@@ -207,17 +249,18 @@ namespace ScoreAttack
                 foreach (var ghostTimePair in ghostData.GhostByTimeLimit)
                 {
                     writer.Write(ghostTimePair.Key); // Time limit
-                    WriteSingleGhost(writer, ghostTimePair.Value); 
+                    WriteSingleGhost(writer, ghostTimePair.Value);
                 }
             }
 
-            writer.Flush();           
+            writer.Flush();
             writer.Close();
         }
 
         // EXPECTS COMPRESSION WRITER!!!!!!!!!!!
-        public void WriteExportedGhost(BinaryWriter writer, Ghost ghost, Stage stage, float timeLimit, float score) {
-            writer.Write((byte)2); // export version
+        public void WriteExportedGhost(BinaryWriter writer, Ghost ghost, Stage stage, float timeLimit, float score)
+        {
+            writer.Write((byte)currentSaveVersion); // export version
             writer.Write((int)stage);
             writer.Write((Single)timeLimit);
             writer.Write((Single)score);
@@ -225,16 +268,20 @@ namespace ScoreAttack
         }
 
         // EXPECTS COMPRESSION WRITER!!!!!!!!!!!
-        public ExportedGhostData ReadExportedGhost(BinaryReader reader) {
+        public ExportedGhostData ReadExportedGhost(BinaryReader reader)
+        {
             var version = reader.ReadByte();
             Stage stage = (Stage)reader.ReadInt32();
             float timeLimit = (float)reader.ReadSingle();
             float score = (float)reader.ReadSingle();
-            Ghost ghost = ReadSingleGhost(reader);
+
+            int readGhostVersion = version > 2 ? currentSaveVersion : 3;
+            Ghost ghost = ReadSingleGhost(reader, readGhostVersion);
             return new ExportedGhostData(ghost, stage, timeLimit, score);
         }
 
-        private void WriteSingleGhost(BinaryWriter writer, Ghost ghost) {
+        private void WriteSingleGhost(BinaryWriter writer, Ghost ghost)
+        {
             writer.Write((Single)ghost.TickDelta);
             writer.Write((int)ghost.Character);
             writer.Write((string)ghost.CharacterGUID.ToString());
@@ -243,8 +290,8 @@ namespace ScoreAttack
             foreach (var frame in ghost.Frames)
             {
                 writer.Write((Int32)frame.FrameIndex);
-                writer.Write((bool)frame.Valid); 
-                
+                writer.Write((bool)frame.Valid);
+
                 writer.Write((Single)frame.PlayerPosition.x);
                 writer.Write((Single)frame.PlayerPosition.y);
                 writer.Write((Single)frame.PlayerPosition.z);
@@ -260,7 +307,7 @@ namespace ScoreAttack
 
                 writer.Write((Int32)frame.PhoneState);
                 writer.Write((Int32)frame.SpraycanState);
-                
+
                 writer.Write((Int32)frame.moveStyle);
                 writer.Write((Int32)frame.equippedMoveStyle);
                 writer.Write((bool)frame.UsingEquippedMoveStyle);
@@ -268,8 +315,8 @@ namespace ScoreAttack
                 writer.Write((Int32)frame.Animation.ID);
                 writer.Write((Single)frame.Animation.Time);
                 writer.Write((bool)frame.Animation.ForceOverwrite);
-                writer.Write((bool)frame.Animation.Instant); 
-                writer.Write((Single)frame.Animation.AtTime); 
+                writer.Write((bool)frame.Animation.Instant);
+                writer.Write((Single)frame.Animation.AtTime);
 
                 writer.Write((Single)frame.Visual.Position.x);
                 writer.Write((Single)frame.Visual.Position.y);
@@ -302,19 +349,27 @@ namespace ScoreAttack
                 writer.Write((Single)frame.Effects.HighJumpEffects.z);
 
                 writer.Write((Int32)frame.SFX.Count);
-                foreach (GhostFrame.GhostFrameSFX frameSFX in frame.SFX) {
+                foreach (GhostFrame.GhostFrameSFX frameSFX in frame.SFX)
+                {
                     writer.Write((Int32)frameSFX.AudioClipID);
                     writer.Write((Int32)frameSFX.CollectionID);
                     writer.Write((Single)frameSFX.RandomPitchVariance);
                     writer.Write((bool)frameSFX.Voice);
                 }
+
+                writer.Write((float)frame.BaseScore);
+                writer.Write((float)frame.ScoreMultiplier);
+                writer.Write((float)frame.OngoingScore);
+
             }
 
             writer.Write((Single)ghost.Score);
         }
 
-        private Ghost ReadSingleGhost(BinaryReader reader)
+        private Ghost ReadSingleGhost(BinaryReader reader, int version = -1)
         {
+            if (version == -1) { version = currentSaveVersion; }
+
             Ghost ghost = new Ghost(reader.ReadSingle());
             ghost.Character = reader.ReadInt32();
             ghost.CharacterGUID = new Guid(reader.ReadString());
@@ -366,13 +421,22 @@ namespace ScoreAttack
                 frame.Effects.HighJumpEffects = new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
 
                 int sfxCount = reader.ReadInt32();
-                for (int c = 0; c < sfxCount; c++) {
-                    frame.SFX.Add(new GhostFrame.GhostFrameSFX() {
+                for (int c = 0; c < sfxCount; c++)
+                {
+                    frame.SFX.Add(new GhostFrame.GhostFrameSFX()
+                    {
                         AudioClipID = (Reptile.AudioClipID)reader.ReadInt32(),
                         CollectionID = (Reptile.SfxCollectionID)reader.ReadInt32(),
                         RandomPitchVariance = reader.ReadSingle(),
                         Voice = reader.ReadBoolean()
                     });
+                }
+
+                if (version > 3)
+                {
+                    frame.BaseScore = reader.ReadSingle();
+                    frame.ScoreMultiplier = reader.ReadSingle();
+                    frame.OngoingScore = reader.ReadSingle();
                 }
 
                 ghost.Frames.Add(frame);
@@ -508,8 +572,6 @@ namespace ScoreAttack
             }
         }
 
-
-
         private static string GetCleanStageName(Stage stage)
         {
             return stage switch
@@ -526,7 +588,8 @@ namespace ScoreAttack
             };
         }
 
-        public string GetSaveLocation() { 
+        public string GetSaveLocation()
+        {
             //return base.GetSaveLocation(SaveLocations.Documents); 
             return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments, Environment.SpecialFolderOption.DoNotVerify), "Bomb Rush Cyberfunk Modding");
         }

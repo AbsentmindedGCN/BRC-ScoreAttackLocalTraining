@@ -21,13 +21,20 @@ namespace ScoreAttackGhostSystem
         private bool _paused = false;
         private float _playbackSpeed = 1f;
         private float _currentTime = 0f;
+
         public bool ReplayEnded { get; private set; } = false;
 
         public static Player ghostPlayerCharacter;
         //public int FrameIndex;
 
+        bool developmentMode = false;
+
         // Ghost Settings
         //public bool GhostAudioEnabled = true;
+
+        public float BaseScore;
+        public float ScoreMultiplier;
+        public float LastAppliedOngoingScore;
 
         public bool Active { get; private set; } = false;
 
@@ -183,56 +190,6 @@ namespace ScoreAttackGhostSystem
             _currentTime = (float)frame * Replay.TickDelta;
         }
 
-        // handled in AdvanceGhostTick
-        /*public override void OnFixedUpdate()
-        {
-            if (ReplayEnded || Replay == null || ghostPlayerCharacter == null)
-                return;
-
-            bool skip = false;
-
-            if (_currentTime == 0f)
-                skip = true;
-
-
-            var frames = Replay.Frames;
-            var frameIndex = Replay.GetFrameForTime(_currentTime);
-
-            if (frameIndex >= frames.Count)
-            {
-                // Stop updating and go idle
-                frameIndex = frames.Count - 1;
-                ReplayEnded = true;
-
-                ApplyFrameToWorld(frames[frameIndex], true);
-                //ghostPlayerCharacter.PlayAnim(Animator.StringToHash("idle"), true, false, 0f); 
-                return;
-            }
-
-            // Double-buffering: get current and next frame
-            GhostFrame frameA = frames[frameIndex];
-            GhostFrame frameB = (frameIndex + 1 < frames.Count) ? frames[frameIndex + 1] : frameA;
-
-            // Interpolation factor (0.0 to 1.0)
-            float t = (_currentTime % Replay.TickDelta) / Replay.TickDelta;
-
-            // Interpolate position and rotation
-            Vector3 interpPos = Vector3.Lerp(frameA.PlayerPosition, frameB.PlayerPosition, t);
-            Quaternion interpRot = Quaternion.Slerp(frameA.PlayerRotation, frameB.PlayerRotation, t);
-            Vector3 interpPosVisual = Vector3.Lerp(frameA.Visual.Position, frameB.Visual.Position, t);
-            Quaternion interpRotVisual = Quaternion.Slerp(frameA.Visual.Rotation, frameB.Visual.Rotation, t);
-
-            // Apply to world using frameA + interpolated position/rotation
-            ApplyFrameToWorld(frameA, skip, interpPos, interpRot, interpPosVisual, interpRotVisual);
-
-            //_currentTime += ScoreAttackPlugin.ghostTickInterval;
-            //ApplyFrameToWorld(frames[frameIndex], skip);
-
-            //_currentTime += ScoreAttackPlugin.ghostTickInterval;
-            _currentTime = Mathf.Min(_currentTime + ScoreAttackPlugin.ghostTickInterval, Replay.Length); // clamping
-
-        } */
-
         public void EndReplay()
         {
             // Stop updating and go idle
@@ -267,6 +224,13 @@ namespace ScoreAttackGhostSystem
             if (!frame.Valid)
                 return;
 
+            // Calculate incremental score gained since last frame
+            float currentBaseScore = frame.BaseScore;
+            float currentMultiplier = frame.ScoreMultiplier;
+
+            BaseScore = currentBaseScore;
+            ScoreMultiplier = currentMultiplier;
+
             var p = ghostPlayerCharacter;
 
             p.moveStyle = frame.moveStyle;
@@ -275,6 +239,9 @@ namespace ScoreAttackGhostSystem
             p.InitMovement(frame.moveStyle);
             p.SetMoveStyle(frame.moveStyle, true, false);
             p.SwitchToEquippedMovestyle(frame.UsingEquippedMoveStyle, false, true, false);
+
+            LastAppliedOngoingScore = frame.OngoingScore;
+            p.score = frame.OngoingScore;
 
             if (skip)
             {
@@ -338,13 +305,6 @@ namespace ScoreAttackGhostSystem
             {
                 if (collider == null)
                     continue;
-
-                if (
-                    collider.GetComponent<Junk>() != null ||
-                    collider.GetComponent<JunkBehaviour>() != null ||
-                    collider.gameObject.name.ToLower().Contains("hitbox") ||
-                    collider.gameObject.name.ToLower().Contains("junk")
-                )
                 {
                     collider.enabled = false;
                 }
@@ -407,46 +367,53 @@ namespace ScoreAttackGhostSystem
 
         private void UpdatePlaybackInput()
         {
-            /*if (Input.GetKeyDown(KeyCode.Space))
+            // Dev Commands
+
+            if (developmentMode == true)
             {
-                _paused = !_paused;
+                if (Input.GetKeyDown(KeyCode.Space))
+                {
+                    _paused = !_paused;
+                }
+                _playbackSpeed += Input.mouseScrollDelta.y * 0.05f;
+                if (_playbackSpeed <= 0f)
+                    _playbackSpeed = 0f;
+                if (Input.GetKeyDown(KeyCode.R))
+                {
+                    _playbackSpeed = 1f;
+                    _paused = false;
+                }
+
+                if (Input.GetKeyDown(KeyCode.Backspace))
+                {
+                    _currentTime = 0f;
+                }
+                if (Input.GetKeyDown(KeyCode.H))
+                {
+                    Core.instance.UIManager.gameObject.SetActive(!Core.instance.UIManager.gameObject.activeSelf);
+                }
+                if (Input.GetKeyDown(KeyCode.Alpha0))
+                {
+                    SkipTo(0f);
+                }
+                if (Input.GetKeyDown(KeyCode.Alpha1))
+                {
+                    SkipTo(Replay.Length * 0.25f);
+                }
+                if (Input.GetKeyDown(KeyCode.Alpha2))
+                {
+                    SkipTo(Replay.Length * 0.5f);
+                }
+                if (Input.GetKeyDown(KeyCode.Alpha3))
+                {
+                    SkipTo(Replay.Length * 0.75f);
+                }
+                if (Input.GetKeyDown(KeyCode.Alpha4))
+                {
+                    SkipTo(Replay.Length);
+                }
             }
-            _playbackSpeed += Input.mouseScrollDelta.y * 0.05f;
-            if (_playbackSpeed <= 0f)
-                _playbackSpeed = 0f;
-            if (Input.GetKeyDown(KeyCode.R))
-            {
-                _playbackSpeed = 1f;
-                _paused = false;
-            }*/
-            if (Input.GetKeyDown(KeyCode.Backspace))
-            {
-                _currentTime = 0f;
-            }
-            if (Input.GetKeyDown(KeyCode.H))
-            {
-                Core.instance.UIManager.gameObject.SetActive(!Core.instance.UIManager.gameObject.activeSelf);
-            }
-            if (Input.GetKeyDown(KeyCode.Alpha0))
-            {
-                SkipTo(0f);
-            }
-            if (Input.GetKeyDown(KeyCode.Alpha1))
-            {
-                SkipTo(Replay.Length * 0.25f);
-            }
-            if (Input.GetKeyDown(KeyCode.Alpha2))
-            {
-                SkipTo(Replay.Length * 0.5f);
-            }
-            if (Input.GetKeyDown(KeyCode.Alpha3))
-            {
-                SkipTo(Replay.Length * 0.75f);
-            }
-            if (Input.GetKeyDown(KeyCode.Alpha4))
-            {
-                SkipTo(Replay.Length);
-            }
+            
         }
 
         // Use Unity's LOD system to create a ghost effect

@@ -18,6 +18,7 @@ namespace ScoreAttack
     public enum GhostSoundMode { Off, On, Doppler }
     public enum GhostModel { Self, DJCyber, Faux }
     public enum GhostEffect { Transparent, Normal }
+    public enum GhostScoreMode { Final, Ongoing }
 
     public class AppGhostSettings : CustomApp
     {
@@ -25,10 +26,12 @@ namespace ScoreAttack
         public override bool Available => false;
 
         public static GhostSaveMode SaveMode { get; private set; } = GhostSaveMode.Enabled;
-        //public static GhostDisplayMode DisplayMode { get; private set; } = GhostDisplayMode.Show;
+        // public static GhostDisplayMode DisplayMode { get; private set; } = GhostDisplayMode.Show;
         public static GhostSoundMode SoundMode { get; private set; } = GhostSoundMode.On;
         public static GhostModel CurrentModel { get; private set; } = GhostModel.Self;
         public static GhostEffect CurrentEffect { get; private set; } = GhostEffect.Transparent;
+
+        public static GhostScoreMode CurrentScoreMode { get; private set; } = GhostScoreMode.Final;
 
         public static void Initialize()
         {
@@ -50,7 +53,7 @@ namespace ScoreAttack
             AddEnumButton("Voice & Sound", () => SoundMode, GetNextSoundMode, m => SoundMode = m);
             AddEnumButton("Model Used", () => CurrentModel, GetNextModel, m => CurrentModel = m);
             AddEnumButton("Model Effect", () => CurrentEffect, GetNextEffect, m => CurrentEffect = m);
-
+            AddEnumButton("Score Display", () => CurrentScoreMode, GetNextScoreMode, m => CurrentScoreMode = m);
 
             // Export Ghost Save Data
             var exportButton = PhoneUIUtility.CreateSimpleButton("Export PB Ghosts\n<size=50%>Back up your personal best ghosts</size>");
@@ -58,7 +61,7 @@ namespace ScoreAttack
             {
                 if (ScoreAttackEncounter.IsScoreAttackActive())
                 {
-                    Core.Instance.UIManager.ShowNotification("You are in a run! Cancel your current run before exporting.");
+                    Core.Instance.UIManager.ShowNotification("You are in a run! Cancel your current run before exporting ghosts.");
                     return;
                 }
 
@@ -108,7 +111,7 @@ namespace ScoreAttack
             {
                 if (ScoreAttackEncounter.IsScoreAttackActive())
                 {
-                    Core.Instance.UIManager.ShowNotification("Cancel your current run before importing ghosts.");
+                    Core.Instance.UIManager.ShowNotification("You are in a run! Cancel your current run before importing ghosts.");
                     return;
                 }
 
@@ -158,7 +161,7 @@ namespace ScoreAttack
             {
                 if (ScoreAttackEncounter.IsScoreAttackActive())
                 {
-                    Core.Instance.UIManager.ShowNotification("Can't clear personal best ghosts during a battle!");
+                    Core.Instance.UIManager.ShowNotification("Can't clear personal best ghosts during a run!");
                     return;
                 }
 
@@ -208,6 +211,8 @@ namespace ScoreAttack
                 case GhostModel.Faux: return "Faux";
                 case GhostEffect.Transparent: return "Translucent";
                 case GhostEffect.Normal: return "Normal";
+                case GhostScoreMode.Final: return "Final Score";
+                case GhostScoreMode.Ongoing: return "Real-Time Score";
                 default: return val.ToString();
             }
         }
@@ -227,24 +232,29 @@ namespace ScoreAttack
         private static GhostEffect GetNextEffect(GhostEffect effect) =>
             (GhostEffect)(((int)effect + 1) % System.Enum.GetValues(typeof(GhostEffect)).Length);
 
+        private static GhostScoreMode GetNextScoreMode(GhostScoreMode scoremode) =>
+            (GhostScoreMode)(((int)scoremode + 1) % System.Enum.GetValues(typeof(GhostScoreMode)).Length);
+
         private void LoadState()
         {
             var save = GhostSaveData.Instance;
             SaveMode = save.GhostSaveMode;
-            //DisplayMode = save.GhostDisplayMode;
+            // DisplayMode = save.GhostDisplayMode; // Moved to AppGhost
             SoundMode = save.GhostSoundMode;
             CurrentModel = save.GhostModel;
             CurrentEffect = save.GhostEffect;
+            CurrentScoreMode = save.GhostScoreMode;
         }
 
         private void SaveState()
         {
             var save = GhostSaveData.Instance;
             save.GhostSaveMode = SaveMode;
-            //save.GhostDisplayMode = DisplayMode;
+            // save.GhostDisplayMode = DisplayMode; // Moved to AppGhost
             save.GhostSoundMode = SoundMode;
             save.GhostModel = CurrentModel;
             save.GhostEffect = CurrentEffect;
+            save.GhostScoreMode = CurrentScoreMode;
         }
 
         private static string GetColorForValue<T>(T val)
@@ -266,6 +276,8 @@ namespace ScoreAttack
                 case GhostModel.Faux:
                 case GhostEffect.Transparent:
                 case GhostEffect.Normal:
+                case GhostScoreMode.Final:
+                case GhostScoreMode.Ongoing:
                     return "orange";
                 default:
                     return "white";

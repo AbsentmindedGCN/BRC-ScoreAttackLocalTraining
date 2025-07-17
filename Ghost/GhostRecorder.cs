@@ -12,6 +12,11 @@ namespace ScoreAttackGhostSystem
 {
     public class GhostRecorder : GhostState
     {
+        private float accumulatedScore = 0f;
+        private float lastValidBaseScore = 0f;
+        private float lastValidMultiplier = 1f;
+        private bool comboJustDropped = false;
+
         public static GhostRecorder Instance;
         public bool Recording { get; private set; } = false;
 
@@ -33,6 +38,11 @@ namespace ScoreAttackGhostSystem
             _currentReplay.Init();
             Instance = this;
             Recording = true;
+
+            accumulatedScore = 0f;
+            lastValidBaseScore = 0f;
+            lastValidMultiplier = 1f;
+            comboJustDropped = false;
         }
 
         public override void End()
@@ -51,6 +61,21 @@ namespace ScoreAttackGhostSystem
         public override void OnFixedUpdate()
         {
             if (!Recording) { return; }
+
+            if (ScoreAttackManager.Encounter == null || !ScoreAttackEncounter.IsScoreAttackActive())
+            {
+                Debug.Log("[Score Attack] Stopping recording: Score Attack is no longer active.");
+                End();
+                return;
+            }
+
+            if (_currentReplay.Player == null)
+            {
+                Debug.Log("[GhostRecorder] Stopping recording: Player is no longer valid.");
+                End();
+                return;
+            }
+
             RecordCurrentFrame();
         }
 
@@ -75,7 +100,48 @@ namespace ScoreAttackGhostSystem
             frame.PlayerPosition = p.transform.position;
             frame.PlayerRotation = p.transform.rotation;
             frame.Velocity = p.GetVelocity();
-            
+
+            /*
+            // Ongoing score
+            frame.BaseScore = p.baseScore;
+            frame.ScoreMultiplier = p.scoreMultiplier;
+            frame.OngoingScore = p.baseScore*p.scoreMultiplier;
+            */
+
+            // === FINAL SCORE FIX ===
+
+            float baseScore = p.baseScore;
+            float multiplier = p.scoreMultiplier;
+
+            // If baseScore is 0 but we had a combo last frame, it means combo dropped
+            if (baseScore == 0f && multiplier == 0f && lastValidBaseScore > 0f)
+            {
+                if (!comboJustDropped)
+                {
+                    accumulatedScore += lastValidBaseScore * lastValidMultiplier;
+                    //Debug.Log($"[Score Attack] Combo dropped — adding {lastValidBaseScore} x {lastValidMultiplier} = {lastValidBaseScore * lastValidMultiplier}");
+                    comboJustDropped = true;
+                }
+
+                // Reset stored combo values
+                lastValidBaseScore = 0f;
+                lastValidMultiplier = 1f;
+            }
+            else if (baseScore > 0f && multiplier > 0f)
+            {
+                lastValidBaseScore = baseScore;
+                lastValidMultiplier = multiplier;
+                comboJustDropped = false;
+            }
+
+            // Set to ghost frame
+            frame.BaseScore = baseScore;
+            frame.ScoreMultiplier = multiplier;
+            frame.OngoingScore = accumulatedScore + (baseScore * multiplier);
+
+
+            // ----------------------
+
             //frame.PhoneState = p.phone.state;
             frame.SpraycanState = p.spraycanState;
 

@@ -26,6 +26,8 @@ namespace ScoreAttackGhostSystem
         public int Outfit = -1;
         public float Score { get; set; } = 0f;
 
+        public float OngoingScore { get; set; } = 0f;
+
         public void Init()
         {
             _player = WorldHandler.instance.GetCurrentPlayer();
@@ -36,5 +38,20 @@ namespace ScoreAttackGhostSystem
             var divTime = Mathf.FloorToInt(time / _tickDelta);
             return divTime;
         }
+        public bool HasOngoingScoreData
+        {
+            get
+            {
+                return Frames.Any(f => f.OngoingScore > 0f);
+            }
+        }
+
+        public bool HasOngoingScoreDataCached = false;
+
+        public void CacheOngoingScoreData()
+        {
+            HasOngoingScoreDataCached = Frames.Any(f => f.OngoingScore > 0f);
+        }
+
     }
 }

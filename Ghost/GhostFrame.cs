@@ -20,6 +20,12 @@ namespace ScoreAttackGhostSystem
         public Quaternion PlayerRotation;
         public Vector3 Velocity;
 
+        //public float OngoingScore = 0f;
+
+        public float BaseScore;
+        public float ScoreMultiplier;
+        public float OngoingScore;
+
         public Phone.PhoneState PhoneState = Phone.PhoneState.OFF;
         public Player.SpraycanState SpraycanState = Player.SpraycanState.NONE;
 
