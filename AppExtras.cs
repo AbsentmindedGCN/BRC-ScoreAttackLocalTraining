@@ -13,7 +13,11 @@ namespace ScoreAttack
         Default,            // Default
         DefaultPlus,        // Default Plus
         LLB,                // Lethal League Blaze
-        FZero               // F-Zero GX
+        FZero,              // F-Zero GX
+        POPN,               // Pop'n Music
+        SSBM,               // Super Smash Bros. Melee
+        SF3S,               // Street Fighter III 3rd Strike
+        Skullgirls          // Skullgirls
     }
 
     public class AppExtras : CustomApp
@@ -129,6 +133,10 @@ namespace ScoreAttack
                 case SFXToggle.DefaultPlus: return "Default Plus SFX";
                 case SFXToggle.LLB: return "Lethal League Blaze SFX";
                 case SFXToggle.FZero: return "F-Zero GX SFX";
+                case SFXToggle.POPN: return "Pop'n Music SFX";
+                case SFXToggle.SSBM: return "Smash Bros. Melee SFX";
+                case SFXToggle.SF3S: return "Street Fighter III 3rd Strike SFX";
+                case SFXToggle.Skullgirls: return "Skullgirls SFX";
                 default: return mode.ToString();
             }
         }

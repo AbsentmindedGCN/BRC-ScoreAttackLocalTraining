@@ -305,7 +305,7 @@ namespace ScoreAttack
                 {
                     if (ScoreAttackEncounter.IsScoreAttackActive())
                     {
-                        Debug.LogError("Can't clear PB during a battle!");
+                        Debug.LogError("Can't clear PB during a run!");
                         Core.Instance.UIManager.ShowNotification("You are in a run! Cancel the run to clear your personal bests.");
                     }
                     else

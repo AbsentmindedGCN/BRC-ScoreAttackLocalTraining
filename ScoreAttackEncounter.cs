@@ -16,6 +16,7 @@ using UnityEngine.Events;
 using System.Collections;
 using ScoreAttackGhostSystem;
 using static Reptile.FixedFramerateSequence;
+using static TMPro.SpriteAssetUtilities.TexturePacker_JsonArray;
 
 namespace ScoreAttack
 {
@@ -51,6 +52,7 @@ namespace ScoreAttack
 
         // Ghost Score
         private float externalGhostScore = -1f;
+        private bool ghostWasExternal = false;
 
         // Set up WantedManager to clear cops
         private WantedManager wantedManager;
@@ -113,6 +115,65 @@ namespace ScoreAttack
                 yield return LoadOgg(Path.Combine(pluginPath, "fzero/fzero_courserecord.ogg"), clip => announcerBest = clip);
                 yield return LoadOgg(Path.Combine(pluginPath, "fzero/fzero_goal.ogg"), clip => announcerGhost = clip);
             }
+            else if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.POPN)
+            {
+                yield return LoadOgg(Path.Combine(pluginPath, "popn/pnm_areyouready.ogg"), clip => announcerThree = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "popn/null.ogg"), clip => announcerTwo = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "popn/null.ogg"), clip => announcerOne = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "popn/pnm_herewego.ogg"), clip => announcerStart = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "popn/pnm_exit.ogg"), clip => announcerEnd = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "popn/pnm_marvelous.ogg"), clip => announcerBest = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "popn/pnm_yourecool.ogg"), clip => announcerGhost = clip);
+            }
+            else if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SSBM)
+            {
+                yield return LoadOgg(Path.Combine(pluginPath, "melee/ssbm_ready.ogg"), clip => announcerThree = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "melee/null.ogg"), clip => announcerTwo = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "melee/null.ogg"), clip => announcerOne = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "melee/ssbm_go.ogg"), clip => announcerStart = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "melee/ssbm_time.ogg"), clip => announcerEnd = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "melee/ssbm_anewrecord.ogg"), clip => announcerBest = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "melee/ssbm_success.ogg"), clip => announcerGhost = clip);
+            }
+            else if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SF3S)
+            {
+                // Define valid group IDs
+                string[] introGroups = { "i1", "i2", "i3", "i4" };
+
+                // Randomly select a group index
+                int randomIndex = UnityEngine.Random.Range(0, introGroups.Length); // 0 to 3
+                string selectedGroup = introGroups[randomIndex];
+
+                // Build correct file paths for p1 and p2 using the same group
+                string pathP1 = Path.Combine(pluginPath, "sf3", $"sf3_{selectedGroup}p1.ogg");
+                string pathP2 = Path.Combine(pluginPath, "sf3", $"sf3_{selectedGroup}p2.ogg");
+
+                // Load paired clips for announcerThree (p1) and announcerStart (p2)
+                yield return LoadOgg(pathP1, clip => announcerThree = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "sf3/null.ogg"), clip => announcerTwo = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "sf3/null.ogg"), clip => announcerOne = clip);
+                yield return LoadOgg(pathP2, clip => announcerStart = clip);
+
+                // Load other announcer calls
+                yield return LoadOgg(Path.Combine(pluginPath, "sf3/sf3_timeover.ogg"), clip => announcerEnd = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "sf3/sf3_letsgo.ogg"), clip => announcerBest = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "sf3/sf3_letsgo.ogg"), clip => announcerGhost = clip);
+            }
+            else if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.Skullgirls)
+            {
+                yield return LoadOgg(Path.Combine(pluginPath, "skullgirls/sg_ladiesandgentlemen.ogg"), clip => announcerThree = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "skullgirls/null.ogg"), clip => announcerTwo = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "skullgirls/null.ogg"), clip => announcerOne = clip);
+
+                // Randomly choose one of the showtime variants
+                int showtimeVariant = UnityEngine.Random.Range(1, 4); // 1 to 3
+                string showtimeFile = $"sg_showtime{(showtimeVariant == 1 ? "" : showtimeVariant.ToString())}.ogg";
+                yield return LoadOgg(Path.Combine(pluginPath, "skullgirls", showtimeFile), clip => announcerStart = clip);
+
+                yield return LoadOgg(Path.Combine(pluginPath, "skullgirls/sg_timeout.ogg"), clip => announcerEnd = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "skullgirls/sg_letsgo.ogg"), clip => announcerBest = clip);
+                yield return LoadOgg(Path.Combine(pluginPath, "skullgirls/sg_jingle.ogg"), clip => announcerGhost = clip);
+            }
             else
             {
                 // Don't do anything
@@ -128,6 +189,7 @@ namespace ScoreAttack
             announcerReady = true;
         }
 
+        /*
         private IEnumerator LoadOgg(string filePath, Action<AudioClip> onLoaded)
         {
             var uri = new System.Uri(filePath).AbsoluteUri;
@@ -146,6 +208,45 @@ namespace ScoreAttack
                 }
             }
         }
+        */
+
+        private IEnumerator LoadOgg(string filePath, Action<AudioClip> onLoaded)
+        {
+            var uri = new System.Uri(filePath).AbsoluteUri;
+            using (UnityEngine.Networking.UnityWebRequest www = UnityEngine.Networking.UnityWebRequestMultimedia.GetAudioClip(uri, AudioType.OGGVORBIS))
+            {
+                yield return www.SendWebRequest();
+
+                if (www.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
+                {
+                    Debug.LogError("Error loading OGG: " + www.error);
+                }
+                else
+                {
+                    AudioClip clip = UnityEngine.Networking.DownloadHandlerAudioClip.GetContent(www);
+
+                    if (clip.loadState != AudioDataLoadState.Loaded)
+                    {
+                        clip.LoadAudioData();
+
+                        // Wait until clip is fully loaded into memory
+                        while (clip.loadState == AudioDataLoadState.Loading)
+                        {
+                            yield return null;
+                        }
+
+                        if (clip.loadState != AudioDataLoadState.Loaded)
+                        {
+                            Debug.LogError("AudioClip failed to load completely: " + filePath);
+                            yield break;
+                        }
+                    }
+
+                    onLoaded?.Invoke(clip);
+                }
+            }
+        }
+
 
         public void SetPlayOggSounds(bool value)
         {
@@ -223,29 +324,16 @@ namespace ScoreAttack
             //var ghostManagerType = typeof(GhostManager);
 
             // Get ghost player
-            //var ghostPlayerField = ghostManagerType.GetField("_ghostPlayer", BindingFlags.NonPublic | BindingFlags.Instance);
             ghostPlayerInstance = ghostManager.GhostPlayer;
 
             // Get ghost recorder
-            //var ghostRecorderField = ghostManagerType.GetField("_ghostRecorder", BindingFlags.NonPublic | BindingFlags.Instance);
             ghostRecorderInstance = ghostManager.GhostRecorder;
 
-            // ----
+            //Clear Ghost Ongoing Score
+            ghostManager.GhostPlayer.LastAppliedOngoingScore = 0f;
+
             // Load the best ghost for the current stage and time limit
-            //Ghost bestGhost = GhostSaveData.Instance.GetOrCreateGhostData(currentStage).GetGhost(timeLimit); //commented out?
-            Ghost bestGhost = GhostSaveData.Instance.GetOrCreateGhostData(currentStage).GetGhost(timeLimit); //commented out?
-
-            /*
-            // If no ghost exists yet, create a placeholder
-            if (bestGhost == null)
-            {
-                bestGhost = new Ghost(60f); // Default FPS?
-                GhostSaveData.Instance.GetOrCreateGhostData(currentStage).SetGhost(timeLimit, bestGhost);
-                //Core.Instance.SaveManager.SaveCurrentSaveSlot();
-            }
-            */
-
-            // ----
+            Ghost bestGhost = GhostSaveData.Instance.GetOrCreateGhostData(currentStage).GetGhost(timeLimit);
 
             if (ScoreAttackManager.ExternalGhostLoadedFromGhostList && ScoreAttackManager.LoadedExternalGhost != null)
             {
@@ -272,16 +360,6 @@ namespace ScoreAttack
             // Update the personal best score if the current score is higher
             float currentScore = ScoreGot;
 
-            //if (player.IsBusyWithSequence())
-            //    return;
-
-            /*
-            if (player.IsBusyWithSequence())
-            {
-                this.timeLimitTimer -= Core.dt;
-            }
-            */
-
             if (!isCountdownFinished)
             {
                 if (!announcerReady)
@@ -292,8 +370,6 @@ namespace ScoreAttack
 
                 // Countdown logic
                 countdownTimer -= customDeltaTime;
-                //countdownTimer -= Core.dt;
-                //var text = NiceTimerString(countdownTimer);
                 var text = Mathf.CeilToInt(countdownTimer).ToString(); // Display only 3, 2, 1
                 GameplayUI gameplay = Core.Instance.UIManager.gameplay;
                 gameplay.timeLimitLabel.text = text + "...";
@@ -302,7 +378,13 @@ namespace ScoreAttack
                 {
                     if (Mathf.CeilToInt(countdownTimer) == 3 && !hasPlayedThree)
                     {
-                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB || ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero)
+                        //if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB || ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero)
+                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB   ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.POPN  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SSBM  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SF3S  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.Skullgirls)
                         {
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerThree, player.AudioManager.audioSources[3], 0f);
                         }
@@ -322,7 +404,12 @@ namespace ScoreAttack
                     }
                     else if (Mathf.CeilToInt(countdownTimer) == 2 && !hasPlayedTwo)
                     {
-                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB || ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero)
+                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB   ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.POPN  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SSBM  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SF3S  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.Skullgirls)
                         {
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerTwo, player.AudioManager.audioSources[3], 0f);
                         }
@@ -342,7 +429,12 @@ namespace ScoreAttack
                     }
                     else if (Mathf.CeilToInt(countdownTimer) == 1 && !hasPlayedOne)
                     {
-                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB || ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero)
+                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB   ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.POPN  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SSBM  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SF3S  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.Skullgirls)
                         {
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerOne, player.AudioManager.audioSources[3], 0f);
                         }
@@ -374,7 +466,13 @@ namespace ScoreAttack
 
                     if (playCustomSounds)
                     {
-                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB || ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero)
+                        //if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB || ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero)
+                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB   ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.POPN  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SSBM  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SF3S  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.Skullgirls)
                         {
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerStart, player.AudioManager.audioSources[3], 0f);
                         }
@@ -405,9 +503,15 @@ namespace ScoreAttack
                 {
                     if (playCustomSounds)
                     {
-                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB || ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero)
+                        //if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB || ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero)
+                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB   ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.POPN  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SSBM  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SF3S  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.Skullgirls)
                         {
-                            // Play LLB SFX
+                            // Play Custom SFX
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerEnd, player.AudioManager.audioSources[3], 0f);
                             //float sfxVolume = Core.Instance.AudioManager.SfxVolume;
                             //audioSource?.PlayOneShot(announcerEnd, sfxVolume * 0.5f);
@@ -480,22 +584,6 @@ namespace ScoreAttack
 
                     // Clear Police (Fix for leftover chains)
                     ResetPoliceState();
-
-                    // Stop Ghost after ~3 sec
-                    //ghostEndTimer = 3f;
-
-                    /*
-                    // Countdown real quick
-                    if (ghostEndTimer > 0f)
-                    {
-                        ghostEndTimer -= customDeltaTime;
-                        if (ghostEndTimer <= 0f)
-                        {
-                            EndGhostPlayback();
-                            ghostEndTimer = -1f; // Prevent it from running again
-                        }
-                    }
-                    */
 
                     timeLimitTimer = 0f;
                 }
@@ -587,7 +675,13 @@ namespace ScoreAttack
 
                     if (playCustomSounds && !hasPlayedBest)
                     {
-                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB || ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero)
+                        //if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB || ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero)
+                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB   ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.POPN  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SSBM  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SF3S  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.Skullgirls)
                         {
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerBest, player.AudioManager.audioSources[3], 0f);
                         }
@@ -626,10 +720,22 @@ namespace ScoreAttack
                     }
                 }
 
-                //Update UI
+                // Update UI
                 else
                 {
-                    if (ghostLoaded && ghostScore >= 0f)
+                    var ghostManager = GhostManager.Instance;
+                    var ghostPlayer = ghostManager?.GhostPlayer;
+                    var replay = ghostPlayer?.Replay;
+
+                    bool usingOngoing = GhostSaveData.Instance.GhostScoreMode == GhostScoreMode.Ongoing;
+                    bool hasReplay = replay != null && replay.Frames != null && replay.Frames.Count > 0;
+
+                    if (usingOngoing && hasReplay && replay.HasOngoingScoreData)
+                    {
+                        float ongoing = ghostPlayer.LastAppliedOngoingScore;
+                        gameplay.targetScoreLabel.text = FormattingUtility.FormatPlayerScore(cultureInfo, ongoing);
+                    }
+                    else if (ghostLoaded && ghostScore >= 0f)
                     {
                         gameplay.targetScoreLabel.text = FormattingUtility.FormatPlayerScore(cultureInfo, ghostScore);
                     }
@@ -641,6 +747,7 @@ namespace ScoreAttack
                     hasPlayedBest = false;
                     hasPlayedGhostBeaten = false;
                 }
+
 
                 // Always show current score
                 gameplay.totalScoreLabel.text = FormattingUtility.FormatPlayerScore(cultureInfo, ScoreGot);
@@ -883,6 +990,7 @@ namespace ScoreAttack
             if (ScoreAttackManager.LoadedExternalGhost != null)
             {
                 bestGhost = ScoreAttackManager.LoadedExternalGhost;
+                ghostWasExternal = true;
                 ScoreAttackManager.LoadedExternalGhost = null; // Clear it after use
                 Debug.Log("[ScoreAttack] Using externally loaded ghost.");
             }
@@ -890,6 +998,7 @@ namespace ScoreAttack
             {
                 // Fallback to personal best ghost
                 bestGhost = GhostSaveData.Instance.GetOrCreateGhostData(currentStage).GetGhost(timeLimit);
+                ghostWasExternal = false;
                 Debug.Log("[ScoreAttack] Using personal best ghost.");
             }
 
@@ -919,6 +1028,10 @@ namespace ScoreAttack
                     PlayerPosition = originalFrame.PlayerPosition,
                     PlayerRotation = originalFrame.PlayerRotation,
                     Velocity = originalFrame.Velocity,
+
+                    BaseScore = originalFrame.BaseScore,
+                    ScoreMultiplier = originalFrame.ScoreMultiplier,
+                    OngoingScore = originalFrame.OngoingScore,
 
                     PhoneState = originalFrame.PhoneState,
                     SpraycanState = originalFrame.SpraycanState,
@@ -999,11 +1112,6 @@ namespace ScoreAttack
             if (GhostManager.Instance.GhostPlayer.Active) { EndGhostPlayback(); }
         }
 
-
-        // -------------
-
-
-        // I'm not sure why i'm getting null refs so I'm overriding this method and taking out some stuff we're not using.
         public override void SetEncounterState(EncounterState setState)
         {
             stateTimer = 0f;
