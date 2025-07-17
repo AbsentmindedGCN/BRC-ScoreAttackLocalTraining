@@ -16,6 +16,9 @@ namespace ScoreAttackGhostSystem
         private float lastValidBaseScore = 0f;
         private float lastValidMultiplier = 1f;
         private bool comboJustDropped = false;
+        private float lastFrameScore = 0f;
+        private float comboAccumulated = 0f;
+
 
         public static GhostRecorder Instance;
         public bool Recording { get; private set; } = false;
@@ -109,7 +112,7 @@ namespace ScoreAttackGhostSystem
             */
 
             // === FINAL SCORE FIX ===
-
+            /*
             float baseScore = p.baseScore;
             float multiplier = p.scoreMultiplier;
 
@@ -138,6 +141,76 @@ namespace ScoreAttackGhostSystem
             frame.BaseScore = baseScore;
             frame.ScoreMultiplier = multiplier;
             frame.OngoingScore = accumulatedScore + (baseScore * multiplier);
+            */
+
+            /*
+            float baseScore = p.baseScore;
+            float multiplier = p.scoreMultiplier;
+
+            // Calculate current combo score
+            float currentScore = baseScore * multiplier;
+
+            // Only add score if it increased since last frame
+            if (currentScore > 0f && currentScore != lastFrameScore)
+            {
+                float delta = currentScore - lastFrameScore;
+
+                // Only add positive increases
+                if (delta > 0f)
+                {
+                    accumulatedScore += delta;
+                }
+
+                lastFrameScore = currentScore;
+            }
+            else if (currentScore == 0f)
+            {
+                // Combo dropped or ended
+                lastFrameScore = 0f;
+            }
+
+            // Set to ghost frame
+            frame.BaseScore = baseScore;
+            frame.ScoreMultiplier = multiplier;
+            frame.OngoingScore = accumulatedScore;
+            */
+
+            float baseScore = p.baseScore;
+            float multiplier = p.scoreMultiplier;
+            float comboScore = baseScore * multiplier;
+
+            // If combo is currently active
+            if (comboScore > 0f)
+            {
+                if (comboJustDropped)
+                {
+                    // New combo started after drop
+                    comboJustDropped = false;
+                    comboAccumulated = 0f;
+                }
+
+                // Accumulate current combo
+                comboAccumulated = comboScore;
+            }
+            else
+            {
+                // Combo dropped
+                if (!comboJustDropped && comboAccumulated > 0f)
+                {
+                    accumulatedScore += comboAccumulated;
+                    //Debug.Log($"[Score Attack] Combo dropped — added {comboAccumulated}");
+                    comboAccumulated = 0f;
+                    comboJustDropped = true;
+                }
+            }
+
+            // Add ongoing combo if it’s the last frame (e.g., replay ends or time expires)
+            // (You may do this outside this loop if needed)
+
+            // Assign values to frame
+            frame.BaseScore = baseScore;
+            frame.ScoreMultiplier = multiplier;
+            frame.OngoingScore = accumulatedScore + comboAccumulated;
 
 
             // ----------------------
