@@ -249,5 +249,21 @@ namespace ScoreAttackGhostSystem.Patches
                 GhostRecorder.Instance.LastFrame.Effects.HighJumpEffects = dir; 
             }
         }
+
+        // Spraycan fix
+        [HarmonyPatch(typeof(Player), nameof(Player.StopHoldSpraycan))]
+        internal class Player_StopHoldSpraycan_Patch
+        {
+            [HarmonyPrefix]
+            private static bool Prefix(Player __instance)
+            {
+                // Skip StopHoldSpraycan for the ghost player
+                if (__instance == GhostPlayer.ghostPlayerCharacter)
+                    return false;
+
+                return true;
+            }
+        }
+
     }
 }
