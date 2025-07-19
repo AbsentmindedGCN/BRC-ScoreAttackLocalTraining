@@ -360,6 +360,21 @@ namespace ScoreAttack
             // Update the personal best score if the current score is higher
             float currentScore = ScoreGot;
 
+            /*
+            if (GhostManager.Instance != null && GhostManager.Instance.GhostRecorder != null && GhostManager.Instance.GhostRecorder.Recording)
+            {
+                if (GhostManager.Instance.GhostRecorder.LastFrame != null)
+                {
+                    GhostManager.Instance.GhostRecorder.LastFrame.OngoingScore = ScoreGot;
+                }
+                else
+                {
+                    //Debug.LogWarning("[ScoreAttack] GhostRecorder is recording, but LastFrame is null!");
+                }
+            }
+            */
+
+
             if (!isCountdownFinished)
             {
                 if (!announcerReady)
@@ -379,11 +394,11 @@ namespace ScoreAttack
                     if (Mathf.CeilToInt(countdownTimer) == 3 && !hasPlayedThree)
                     {
                         //if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB || ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero)
-                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB   ||
+                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB ||
                             ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero ||
-                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.POPN  ||
-                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SSBM  ||
-                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SF3S  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.POPN ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SSBM ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SF3S ||
                             ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.Skullgirls)
                         {
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerThree, player.AudioManager.audioSources[3], 0f);
@@ -404,11 +419,11 @@ namespace ScoreAttack
                     }
                     else if (Mathf.CeilToInt(countdownTimer) == 2 && !hasPlayedTwo)
                     {
-                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB   ||
+                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB ||
                             ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero ||
-                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.POPN  ||
-                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SSBM  ||
-                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SF3S  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.POPN ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SSBM ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SF3S ||
                             ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.Skullgirls)
                         {
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerTwo, player.AudioManager.audioSources[3], 0f);
@@ -429,11 +444,11 @@ namespace ScoreAttack
                     }
                     else if (Mathf.CeilToInt(countdownTimer) == 1 && !hasPlayedOne)
                     {
-                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB   ||
+                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB ||
                             ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero ||
-                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.POPN  ||
-                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SSBM  ||
-                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SF3S  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.POPN ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SSBM ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SF3S ||
                             ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.Skullgirls)
                         {
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerOne, player.AudioManager.audioSources[3], 0f);
@@ -464,14 +479,15 @@ namespace ScoreAttack
                     player.baseScore = 0f;
                     player.scoreMultiplier = 0f;
 
+
                     if (playCustomSounds)
                     {
                         //if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB || ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero)
-                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB   ||
+                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB ||
                             ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero ||
-                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.POPN  ||
-                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SSBM  ||
-                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SF3S  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.POPN ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SSBM ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SF3S ||
                             ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.Skullgirls)
                         {
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerStart, player.AudioManager.audioSources[3], 0f);
@@ -504,11 +520,11 @@ namespace ScoreAttack
                     if (playCustomSounds)
                     {
                         //if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB || ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero)
-                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB   ||
+                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB ||
                             ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero ||
-                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.POPN  ||
-                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SSBM  ||
-                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SF3S  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.POPN ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SSBM ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SF3S ||
                             ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.Skullgirls)
                         {
                             // Play Custom SFX
@@ -537,6 +553,7 @@ namespace ScoreAttack
                     personalBestScore = ScoreAttackSaveData.Instance.GetOrCreatePersonalBest(currentStage).GetPersonalBest(timeLimit);
 
                     // Check if there is a new personal best
+                    bool savedGhostToFile = false;
                     if (ScoreGot > personalBestScore)
                     {
                         SavePB();
@@ -545,6 +562,7 @@ namespace ScoreAttack
                         Debug.Log("[ScoreAttack] Exporting new personal best as external ghost (OnlyPB mode).");
                         var pbreplay = (ghostRecorderInstance as GhostRecorder)?.Replay;
                         GhostSaveData.Instance.SaveGhostToFile(pbreplay, currentStage, timeLimit, ScoreGot);
+                        savedGhostToFile = true;
                     }
 
                     // Save External Ghost
@@ -561,8 +579,11 @@ namespace ScoreAttack
                         }
                         else if (GhostSaveData.Instance.GhostSaveMode == GhostSaveMode.Enabled)
                         {
-                            Debug.Log("[ScoreAttack] Saving ghost (Enabled mode).");
-                            GhostSaveData.Instance.SaveGhostToFile(replay, currentStage, timeLimit, ScoreGot);
+                            if (!savedGhostToFile)
+                            {
+                                Debug.Log("[ScoreAttack] Saving ghost (Enabled mode).");
+                                GhostSaveData.Instance.SaveGhostToFile(replay, currentStage, timeLimit, ScoreGot);
+                            }
                         }
                         else
                         {
@@ -573,7 +594,6 @@ namespace ScoreAttack
                     {
                         Debug.LogWarning("[ScoreAttack] Replay was null or had no frames. Ghost not saved.");
                     }
-
 
                     // End Ghost
                     //EndGhostPlayback();
@@ -588,8 +608,28 @@ namespace ScoreAttack
                     timeLimitTimer = 0f;
                 }
 
+                /*
                 ScoreGot = player.score + player.baseScore * player.scoreMultiplier;
+                //if (GhostRecorder.Instance.Recording && GhostRecorder.Instance.LastFrame != null) GhostRecorder.Instance.LastFrame.OngoingScore = ScoreGot;
+
                 SetScoreUI();
+                */
+
+
+                ScoreGot = player.score + player.baseScore * player.scoreMultiplier;
+                if (GhostManager.Instance != null && GhostManager.Instance.GhostRecorder != null && GhostManager.Instance.GhostRecorder.Recording)
+                {
+                    if (GhostManager.Instance.GhostRecorder.LastFrame != null)
+                    {
+                        GhostManager.Instance.GhostRecorder.LastFrame.OngoingScore = ScoreGot;
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[ScoreAttack] GhostRecorder is recording, but LastFrame is null!");
+                    }
+                }
+                SetScoreUI();
+
 
                 // Update personal best score if the current score surpasses it
                 if (ScoreGot > personalBestScore)
@@ -676,11 +716,11 @@ namespace ScoreAttack
                     if (playCustomSounds && !hasPlayedBest)
                     {
                         //if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB || ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero)
-                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB   ||
+                        if (ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.LLB ||
                             ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.FZero ||
-                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.POPN  ||
-                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SSBM  ||
-                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SF3S  ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.POPN ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SSBM ||
+                            ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.SF3S ||
                             ScoreAttackSaveData.Instance.ExtraSFXMode == SFXToggle.Skullgirls)
                         {
                             player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerBest, player.AudioManager.audioSources[3], 0f);
@@ -748,7 +788,6 @@ namespace ScoreAttack
                     hasPlayedGhostBeaten = false;
                 }
 
-
                 // Always show current score
                 gameplay.totalScoreLabel.text = FormattingUtility.FormatPlayerScore(cultureInfo, ScoreGot);
 
@@ -770,6 +809,7 @@ namespace ScoreAttack
             //currentBestGhost = ScoreAttackGhostSaveData.Instance.GetOrCreateGhostData(currentStage).GetGhost(timeLimit);
 
             // Update personal best score if the current score surpasses it
+            bool savedGhostToFile = false;
             if (ScoreGot > personalBestScore)
             {
                 SavePB();
@@ -778,7 +818,7 @@ namespace ScoreAttack
                 Debug.Log("[ScoreAttack] Exporting new personal best as external ghost (OnlyPB mode).");
                 var pbreplay = (ghostRecorderInstance as GhostRecorder)?.Replay;
                 GhostSaveData.Instance.SaveGhostToFile(pbreplay, currentStage, timeLimit, ScoreGot);
-
+                savedGhostToFile = true;
             }
 
             var replay = (ghostRecorderInstance as GhostRecorder)?.Replay;
@@ -794,8 +834,11 @@ namespace ScoreAttack
                 }
                 else if (GhostSaveData.Instance.GhostSaveMode == GhostSaveMode.Enabled)
                 {
-                    Debug.Log("[ScoreAttack] Saving ghost (Enabled mode).");
-                    GhostSaveData.Instance.SaveGhostToFile(replay, currentStage, timeLimit, ScoreGot);
+                    if (!savedGhostToFile)
+                    {
+                        Debug.Log("[ScoreAttack] Saving ghost (Enabled mode).");
+                        GhostSaveData.Instance.SaveGhostToFile(replay, currentStage, timeLimit, ScoreGot);
+                    }
                 }
                 else
                 {
