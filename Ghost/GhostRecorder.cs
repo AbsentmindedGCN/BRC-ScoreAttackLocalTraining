@@ -12,12 +12,12 @@ namespace ScoreAttackGhostSystem
 {
     public class GhostRecorder : GhostState
     {
-        private float accumulatedScore = 0f;
+       /* private float accumulatedScore = 0f;
         private float lastValidBaseScore = 0f;
         private float lastValidMultiplier = 1f;
         private bool comboJustDropped = false;
         private float lastFrameScore = 0f;
-        private float comboAccumulated = 0f;
+        private float comboAccumulated = 0f;*/
 
 
         public static GhostRecorder Instance;
@@ -42,10 +42,10 @@ namespace ScoreAttackGhostSystem
             Instance = this;
             Recording = true;
 
-            accumulatedScore = 0f;
+            /* accumulatedScore = 0f;
             lastValidBaseScore = 0f;
             lastValidMultiplier = 1f;
-            comboJustDropped = false;
+            comboJustDropped = false; */
         }
 
         public override void End()
@@ -175,7 +175,7 @@ namespace ScoreAttackGhostSystem
             frame.OngoingScore = accumulatedScore;
             */
 
-            float baseScore = p.baseScore;
+            /* float baseScore = p.baseScore;
             float multiplier = p.scoreMultiplier;
             float comboScore = baseScore * multiplier;
 
@@ -207,10 +207,12 @@ namespace ScoreAttackGhostSystem
             // Add ongoing combo if it’s the last frame (e.g., replay ends or time expires)
             // (You may do this outside this loop if needed)
 
+            */
+
             // Assign values to frame
-            frame.BaseScore = baseScore;
-            frame.ScoreMultiplier = multiplier;
-            frame.OngoingScore = accumulatedScore + comboAccumulated;
+            frame.BaseScore = p.baseScore;
+            frame.ScoreMultiplier = p.scoreMultiplier;
+            //frame.OngoingScore = accumulatedScore + comboAccumulated;
 
 
             // ----------------------

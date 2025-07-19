@@ -574,7 +574,7 @@ namespace ScoreAttack
 
         private static string GetCleanStageName(Stage stage)
         {
-            return stage switch
+            string cleanStageName = stage switch
             {
                 Stage.hideout => "hideout",
                 Stage.downhill => "versum_hill",
@@ -586,6 +586,8 @@ namespace ScoreAttack
                 Stage.Prelude => "police_station",
                 _ => stage.ToString().ToLowerInvariant() // fallback
             };
+
+            return cleanStageName.Replace(@"/", ".").Replace(@"\", "."); // Fix for Mapstation
         }
 
         public string GetSaveLocation()

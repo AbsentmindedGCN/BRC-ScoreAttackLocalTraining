@@ -10,15 +10,16 @@ using System.Linq;
 using CommonAPI.Phone;
 using Reptile.Phone;
 using System.Collections.Generic;
-using System.Net;
-using UnityEngine.UIElements;
+using System.Threading.Tasks;
 
 namespace ScoreAttack
 {
-
     public class AppGhostDelete : CustomApp
     {
         public override bool Available => false;
+
+        private TMPro.TMP_Text titleBarText;
+        private string normalTitle = "Delete Ghosts";
 
         private class GhostEntry
         {
@@ -39,8 +40,8 @@ namespace ScoreAttack
         public override void OnAppInit()
         {
             base.OnAppInit();
-            CreateIconlessTitleBar("Delete Ghosts");
-            //CreateIconlessTitleBar("Delete Ghosts\n<size=50%>Select to Delete</size>");
+            CreateIconlessTitleBar(normalTitle);
+            titleBarText = GetComponentInChildren<TMPro.TMP_Text>();
             ScrollView = PhoneScrollView.Create(this);
         }
 
@@ -50,118 +51,75 @@ namespace ScoreAttack
             ScrollView.RemoveAllButtons();
 
             Stage currentStage = Core.Instance.BaseModule.CurrentStage;
-            LoadGhostDeleteButtons(currentStage, ScrollView);
+
+            if (HasCachedGhostsForStage(currentStage))
+            {
+                LoadGhostDeleteButtons(currentStage);
+                SetTitleBarText(normalTitle);
+            }
+            else
+            {
+                SetTitleBarText("Loading ghosts...");
+                StartCoroutine(LoadGhostDeleteButtonsCoroutine(currentStage));
+            }
         }
 
-        /*
-        private void LoadGhostDeleteButtons(Stage currentStage, PhoneScrollView scrollView)
+        private bool HasCachedGhostsForStage(Stage stage)
         {
+            string cleanStageName = GetCleanStageName(stage).ToLowerInvariant();
+            return CachedGhostEntries.Values.Any(entry =>
+                Path.GetFileNameWithoutExtension(entry.FilePath).ToLower().StartsWith(cleanStageName + "-"));
+        }
+
+        private void SetTitleBarText(string text)
+        {
+            if (titleBarText != null)
+                titleBarText.text = text;
+        }
+
+        private void LoadGhostDeleteButtons(Stage currentStage)
+        {
+            StartCoroutine(LoadGhostDeleteButtonsCoroutine(currentStage));
+        }
+
+        private System.Collections.IEnumerator LoadGhostDeleteButtonsCoroutine(Stage currentStage)
+        {
+            yield return null;
+
             string folderPath = GhostSaveData.Instance.GetSaveLocation();
             string ghostFolder = Path.Combine(folderPath, "GhostSaveData");
 
             if (!Directory.Exists(ghostFolder))
             {
                 Debug.Log("[ScoreAttack] No ghost save folder found.");
-                return;
+                SetTitleBarText(normalTitle);
+                yield break;
             }
 
             var ghostFiles = Directory.GetFiles(ghostFolder, "*.ghost");
-            List<GhostEntry> ghostEntries = new List<GhostEntry>();
+            List<GhostEntry> ghostEntries = null;
 
-            foreach (var file in ghostFiles)
+            var task = Task.Run(() =>
             {
-                var fileName = Path.GetFileNameWithoutExtension(file).ToLower();
-                if (!fileName.StartsWith(currentStage.ToString().ToLower()))
-                    continue;
-
-                if (!TryLoadGhostMetadata(file, out Ghost ghost, out float timeLimit, out float score, out DateTime timestamp))
-                    continue;
-
-                ghostEntries.Add(new GhostEntry
+                var entries = new List<GhostEntry>();
+                foreach (var file in ghostFiles)
                 {
-                    FilePath = file,
-                    Ghost = ghost,
-                    TimeLimit = timeLimit,
-                    Score = score,
-                    Timestamp = timestamp
-                });
-            }
-
-            // Sort by score (ascending)
-            ghostEntries.Sort((a, b) => a.Score.CompareTo(b.Score));
-
-            foreach (var entry in ghostEntries)
-            {
-                string timeLabel = $"{Mathf.RoundToInt(entry.TimeLimit / 60f)} Min - {Mathf.FloorToInt(entry.Score).ToString("N0")}";
-                string timestampLabel = entry.Timestamp.ToString("MMMM d, yyyy, 'at' hh:mm:ss tt");
-                string buttonLabel = $"{timeLabel}\n<size=50%>{timestampLabel}</size>";
-
-                string filePath = entry.FilePath;
-
-                var button = PhoneUIUtility.CreateSimpleButton(buttonLabel);
-                button.OnConfirm += () =>
-                {
-                    if (File.Exists(filePath))
+                    if (CachedGhostEntries.TryGetValue(file, out GhostEntry cachedEntry))
                     {
-                        File.Delete(filePath);
-                        Core.Instance.UIManager.ShowNotification("Ghost deleted.");
-
-                        // Refresh the list after deletion
-                        ScrollView.RemoveAllButtons();
-                        LoadGhostDeleteButtons(currentStage, scrollView);
+                        entries.Add(cachedEntry);
+                        continue;
                     }
-                    else
-                    {
-                        Core.Instance.UIManager.ShowNotification("Ghost file not found.");
-                    }
-                };
 
-                button.LabelUnselectedColor = Color.black;
-                button.LabelSelectedColor = Color.red;
-                scrollView.AddButton(button);
-            }
-        }
-        */
-
-
-        private void LoadGhostDeleteButtons(Stage currentStage, PhoneScrollView scrollView)
-        {
-            string folderPath = GhostSaveData.Instance.GetSaveLocation();
-            string ghostFolder = Path.Combine(folderPath, "GhostSaveData");
-
-            if (!Directory.Exists(ghostFolder))
-            {
-                Debug.Log("[ScoreAttack] No ghost save folder found.");
-                return;
-            }
-
-            var ghostFiles = Directory.GetFiles(ghostFolder, "*.ghost");
-            List<GhostEntry> ghostEntries = new List<GhostEntry>();
-
-            foreach (var file in ghostFiles)
-            {
-                if (CachedGhostEntries.TryGetValue(file, out GhostEntry entry))
-                {
-                    ghostEntries.Add(entry);
-                }
-                else
-                {
-                    var fileName = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
+                    var fileName = Path.GetFileNameWithoutExtension(file).ToLower();
                     string cleanStageName = GetCleanStageName(currentStage).ToLowerInvariant();
-                    /*
-                    if (!fileName.StartsWith(cleanStageName))
-                        continue;
-                    */
+
                     if (!fileName.StartsWith(cleanStageName + "-"))
-                    {
-                        Debug.Log($"[ScoreAttack] Skipping {fileName} (doesn't start with '{cleanStageName}-')");
                         continue;
-                    }
 
                     if (!TryLoadGhostMetadata(file, out Ghost ghost, out float timeLimit, out float score, out DateTime timestamp))
                         continue;
 
-                    GhostEntry fileEntry = new()
+                    GhostEntry entry = new()
                     {
                         FilePath = file,
                         Ghost = ghost,
@@ -170,32 +128,23 @@ namespace ScoreAttack
                         Timestamp = timestamp
                     };
 
-                    ghostEntries.Add(fileEntry);
-                    CachedGhostEntries[file] = fileEntry;
+                    CachedGhostEntries[file] = entry;
+                    entries.Add(entry);
                 }
 
-            }
+                return entries.OrderBy(e => e.TimeLimit).ThenBy(e => e.Score).ToList();
+            });
 
-            /*
-            // Sort by score (ascending)
-            ghostEntries.Sort((a, b) => a.Score.CompareTo(b.Score));
-            */
+            while (!task.IsCompleted)
+                yield return null;
+            ghostEntries = task.Result;
 
-            // Sort by time limit (ascending), then by score (ascending), that way user can delete the LOWEST SCORES first
-            ghostEntries = ghostEntries
-                .OrderBy(entry => entry.TimeLimit)
-                .ThenBy(entry => entry.Score)
-                .ToList();
+            ScrollView.RemoveAllButtons();
 
-            // Add "Delete All" button
             if (ghostEntries.Count > 0)
             {
                 string buttonLabel = $"<color=red><b>DELETE ALL GHOSTS</b></color>\n<size=50%>Careful! This will delete all ghosts in this area!</size>";
-                //string buttonLabel = $"<color=red><b>DELETE ALL GHOSTS</b></color>\n<size=50%>Careful! This will remove all ghosts in {GetCleanStageName(currentStage)}!</size>";
                 var deleteAllButton = PhoneUIUtility.CreateSimpleButton(buttonLabel);
-                //var deleteAllButton = PhoneUIUtility.CreateSimpleButton("<color=red><b>DELETE ALL GHOSTS</b></color>\n<size=50%>Remove every ghost in {currentStage}</size>");
-                //deleteAllButton.LabelUnselectedColor = new Color(0.4f, 0f, 0f); // Dark red
-                //deleteAllButton.LabelSelectedColor = new Color(1f, 0.1f, 0.1f); // Bright red
                 deleteAllButton.LabelUnselectedColor = Color.black;
                 deleteAllButton.LabelSelectedColor = Color.red;
 
@@ -212,22 +161,22 @@ namespace ScoreAttack
 
                     Core.Instance.UIManager.ShowNotification("All ghosts deleted.");
                     ScrollView.RemoveAllButtons();
-                    LoadGhostDeleteButtons(currentStage, scrollView);
+                    LoadGhostDeleteButtons(currentStage);
                 };
 
-                scrollView.AddButton(deleteAllButton);
+                ScrollView.AddButton(deleteAllButton);
             }
 
-            // Add individual delete buttons
+            int processed = 0;
             foreach (var entry in ghostEntries)
             {
-                string timeLabel = $"{Mathf.RoundToInt(entry.TimeLimit / 60f)} Min - {Mathf.FloorToInt(entry.Score).ToString("N0")}";
+                string timeLabel = $"{Mathf.RoundToInt(entry.TimeLimit / 60f)} Min - {Mathf.FloorToInt(entry.Score):N0}";
                 string timestampLabel = entry.Timestamp.ToString("MMMM d, yyyy, 'at' hh:mm:ss tt");
                 string buttonLabel = $"{timeLabel}\n<size=50%>{timestampLabel}</size>";
 
                 string filePath = entry.FilePath;
-
                 var button = PhoneUIUtility.CreateSimpleButton(buttonLabel);
+
                 button.OnConfirm += () =>
                 {
                     if (File.Exists(filePath))
@@ -236,7 +185,7 @@ namespace ScoreAttack
                         Core.Instance.UIManager.ShowNotification("Ghost deleted.");
 
                         ScrollView.RemoveAllButtons();
-                        LoadGhostDeleteButtons(currentStage, scrollView);
+                        LoadGhostDeleteButtons(currentStage);
                     }
                     else
                     {
@@ -246,10 +195,14 @@ namespace ScoreAttack
 
                 button.LabelUnselectedColor = Color.black;
                 button.LabelSelectedColor = Color.red;
-                scrollView.AddButton(button);
-            }
-        }
+                ScrollView.AddButton(button);
 
+                if (++processed % 10 == 0)
+                    yield return null;
+            }
+
+            SetTitleBarText(normalTitle);
+        }
 
         private static bool TryLoadGhostMetadata(string filePath, out Ghost ghost, out float timeLimit, out float score, out DateTime timestamp)
         {
@@ -264,11 +217,10 @@ namespace ScoreAttack
                 var parts = fileName.Split('-');
                 if (parts.Length != 4)
                 {
-                    Debug.LogWarning($"[ScoreAttack] Invalid ghost filename format: {fileName}");
                     return false;
                 }
 
-                string timePart = parts[1]; // "1min"
+                string timePart = parts[1];
                 string numericMinutes = new string(timePart.Where(char.IsDigit).ToArray());
                 if (!int.TryParse(numericMinutes, out int timeMinutes))
                     return false;
@@ -295,7 +247,7 @@ namespace ScoreAttack
 
         private static string GetCleanStageName(Stage stage)
         {
-            return stage switch
+            string cleanStageName = stage switch
             {
                 Stage.hideout => "hideout",
                 Stage.downhill => "versum_hill",
@@ -305,9 +257,10 @@ namespace ScoreAttack
                 Stage.osaka => "mataan",
                 Stage.pyramid => "pyramid_island",
                 Stage.Prelude => "police_station",
-                _ => stage.ToString() // fallback
+                _ => stage.ToString().ToLowerInvariant()
             };
-        }
 
+            return cleanStageName.Replace("/", ".").Replace("\\", ".");
+        }
     }
 }

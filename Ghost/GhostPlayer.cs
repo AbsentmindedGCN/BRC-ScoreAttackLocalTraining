@@ -10,6 +10,7 @@ using static Reptile.UserInputHandler;
 using MonoMod.Cil;
 using static TMPro.SpriteAssetUtilities.TexturePacker_JsonArray;
 using ScoreAttack;
+using System.Reflection;
 
 namespace ScoreAttackGhostSystem
 {
@@ -29,6 +30,9 @@ namespace ScoreAttackGhostSystem
 
         bool developmentMode = false;
 
+        // State Tracker
+        private bool _isSpraying = false;
+
         // Ghost Settings
         //public bool GhostAudioEnabled = true;
 
@@ -37,6 +41,7 @@ namespace ScoreAttackGhostSystem
         public float LastAppliedOngoingScore;
 
         public bool Active { get; private set; } = false;
+        private Player.SpraycanState _lastAppliedSpraycanState = Player.SpraycanState.NONE;
 
         public override void Start()
         {
@@ -66,6 +71,8 @@ namespace ScoreAttackGhostSystem
             }
 
             ScoreAttackPlugin.Instance.ResetCurrentTime();
+
+            LastAppliedOngoingScore = 0;
         }
 
         // Set up the AI Player for the Ghost, this pulls the model and everything from the current player
@@ -217,6 +224,7 @@ namespace ScoreAttackGhostSystem
                 frame.Visual.Position,
                 frame.Visual.Rotation
             );
+
         }
 
         public void ApplyFrameToWorld(GhostFrame frame, bool skip, Vector3 interpPosition, Quaternion interpRotation, Vector3 interpPositionVisual, Quaternion interpRotationVisual)
@@ -225,11 +233,11 @@ namespace ScoreAttackGhostSystem
                 return;
 
             // Calculate incremental score gained since last frame
-            float currentBaseScore = frame.BaseScore;
+            /* float currentBaseScore = frame.BaseScore;
             float currentMultiplier = frame.ScoreMultiplier;
 
             BaseScore = currentBaseScore;
-            ScoreMultiplier = currentMultiplier;
+            ScoreMultiplier = currentMultiplier; */
 
             var p = ghostPlayerCharacter;
 
@@ -240,8 +248,7 @@ namespace ScoreAttackGhostSystem
             p.SetMoveStyle(frame.moveStyle, true, false);
             p.SwitchToEquippedMovestyle(frame.UsingEquippedMoveStyle, false, true, false);
 
-            LastAppliedOngoingScore = frame.OngoingScore;
-            p.score = frame.OngoingScore;
+            if (frame.OngoingScore != 0) { LastAppliedOngoingScore = frame.OngoingScore; }
 
             if (skip)
             {
@@ -253,7 +260,6 @@ namespace ScoreAttackGhostSystem
 
             p.SetVelocity(frame.Velocity);
             //p.phone.phoneState = frame.PhoneState;
-            p.SetSpraycanState(frame.SpraycanState);
 
             p.SetBoostpackAndFrictionEffects(frame.Visual.boostpackEffectMode, frame.Visual.frictionEffectMode);
             p.SetDustEmission(frame.Visual.dustEmission);
@@ -261,8 +267,33 @@ namespace ScoreAttackGhostSystem
             p.SetSpraypaintEmission(frame.Visual.spraypaintEmission);
             p.SetRingEmission((int)frame.Visual.ringEmission);
 
-            float frameTime = frame.Animation.AtTime == -1f ? frame.Animation.Time : frame.Animation.AtTime;
-            p.PlayAnim(frame.Animation.ID, frame.Animation.ForceOverwrite, frame.Animation.Instant, frameTime);
+            //Spraycan fix
+            if (frame.SpraycanState != _lastAppliedSpraycanState)
+            {
+                p.SetSpraycanState(frame.SpraycanState);
+                _lastAppliedSpraycanState = frame.SpraycanState;
+                if (frame.SpraycanState == Player.SpraycanState.SPRAY)
+                    p.anim.Play(p.canSprayHash, 1, 0f);
+            }
+            else { p.spraycanState = frame.SpraycanState; }
+
+            // Only log if changed
+            if (frame.SpraycanState != _lastAppliedSpraycanState)
+            {
+                Debug.Log($"[ScoreAttack] Ghost SpraycanState changed to: {frame.SpraycanState}");
+                _lastAppliedSpraycanState = frame.SpraycanState;
+            }
+            else if (_isSpraying)
+            {
+                UnityEngine.Debug.Log("[ScoreAttack] Replaying spray animation");
+            }
+
+            bool newAnim = frame.Animation.AtTime != -1f;
+            float animTime = !newAnim ? frame.Animation.Time : frame.Animation.AtTime;
+            if (frame.SpraycanState == Player.SpraycanState.NONE || newAnim)
+            {
+                p.PlayAnim(frame.Animation.ID, frame.Animation.ForceOverwrite, frame.Animation.Instant, animTime);
+            }
 
             if (frame.Effects.ringParticles > 0) { p.ringParticles.Emit(frame.Effects.ringParticles); }
             if (frame.Effects.spraypaintParticles > 0) { p.spraypaintParticles.Emit(frame.Effects.spraypaintParticles); }
@@ -349,6 +380,8 @@ namespace ScoreAttackGhostSystem
 
                 UnityEngine.Object.Destroy(ghostPlayerCharacter.gameObject);
             }
+
+            //LastAppliedOngoingScore = 0;
         }
 
         private void RefreshTimeScale()
@@ -413,7 +446,7 @@ namespace ScoreAttackGhostSystem
                     SkipTo(Replay.Length);
                 }
             }
-            
+
         }
 
         // Use Unity's LOD system to create a ghost effect
