@@ -794,6 +794,7 @@ namespace ScoreAttack
                     }
                 }
 
+                /*
                 // Update UI
                 else
                 {
@@ -821,6 +822,45 @@ namespace ScoreAttack
                     hasPlayedBest = false;
                     hasPlayedGhostBeaten = false;
                 }
+                */
+
+                // Update UI to display final score if user doesn't show ghost AND has ongoing score enabled
+                else
+                {
+                    var ghostManager = GhostManager.Instance;
+                    var ghostPlayer = ghostManager?.GhostPlayer;
+                    var replay = ghostPlayer?.Replay;
+
+                    bool usingOngoing = GhostSaveData.Instance.GhostScoreMode == GhostScoreMode.Ongoing;
+                    bool hasReplay = replay != null && replay.Frames != null && replay.Frames.Count > 0;
+                    bool ghostDisplayDisabled = GhostSaveData.Instance.GhostDisplayMode == GhostDisplayMode.Hide;
+
+                    if (usingOngoing && hasReplay && replay.HasOngoingScoreData)
+                    {
+                        if (ghostDisplayDisabled && hasReplay)
+                        {
+                            // Ghosts are hidden, so fallback to personal best
+                            gameplay.targetScoreLabel.text = FormattingUtility.FormatPlayerScore(cultureInfo, personalBestScore);
+                        }
+                        else
+                        {
+                            float ongoing = ghostPlayer.LastAppliedOngoingScore;
+                            gameplay.targetScoreLabel.text = FormattingUtility.FormatPlayerScore(cultureInfo, ongoing);
+                        }
+                    }
+                    else if (ghostLoaded && ghostScore >= 0f)
+                    {
+                        gameplay.targetScoreLabel.text = FormattingUtility.FormatPlayerScore(cultureInfo, ghostScore);
+                    }
+                    else
+                    {
+                        gameplay.targetScoreLabel.text = FormattingUtility.FormatPlayerScore(cultureInfo, personalBestScore);
+                    }
+
+                    hasPlayedBest = false;
+                    hasPlayedGhostBeaten = false;
+                }
+
 
                 // Always show current score
                 gameplay.totalScoreLabel.text = FormattingUtility.FormatPlayerScore(cultureInfo, ScoreGot);
