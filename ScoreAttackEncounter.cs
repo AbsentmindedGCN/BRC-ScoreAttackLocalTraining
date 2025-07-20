@@ -272,6 +272,21 @@ namespace ScoreAttack
         // Start Score Battle and Refresh the Stuff
         public override void StartMainEvent()
         {
+            
+            // Reset state to avoid stale UI on first ghost load
+            displayBestScore = 0.0f; // needed
+            isNewBestDisplayed = false;
+            hasPlayedBest = false;
+            hasPlayedGhostBeaten = false;
+
+            /*
+            // Only clear external ghost flag if it was consumed
+            if (ScoreAttackManager.ExternalGhostLoadedFromGhostList)
+            {
+                ScoreAttackManager.ExternalGhostLoadedFromGhostList = false;
+                ScoreAttackManager.ExternalGhostScore = -1f;
+            }
+            */
 
             // Sync settings with whatever the player chose in AppExtras
             SetPlayOggSounds(ScoreAttackSaveData.Instance.ExtraSFXMode != SFXToggle.Default);
@@ -382,6 +397,14 @@ namespace ScoreAttack
                     Debug.Log("Announcer loading...");
                     return;
                 }
+
+                // Clear other UI before countdown
+                GameplayUI gameplayUI = Core.Instance.UIManager.gameplay;
+                gameplayUI.timeLimitLabel.text = "";
+                gameplayUI.targetScoreLabel.text = "";
+                gameplayUI.totalScoreLabel.text = "";
+                gameplayUI.targetScoreTitleLabel.text = "";
+                gameplayUI.totalScoreTitleLabel.text = "";
 
                 // Countdown logic
                 countdownTimer -= customDeltaTime;
@@ -696,10 +719,17 @@ namespace ScoreAttack
                 var text = NiceTimerString(timeLimitTimer);
                 gameplay.timeLimitLabel.text = text;
 
+                /*
                 // Check if player beat personal best
                 if (ScoreGot > personalBestScore)
                 {
                     personalBestScore = ScoreGot;
+                    isNewBestDisplayed = true;
+                }
+                */
+
+                if (!isNewBestDisplayed && ScoreGot > personalBestScore)
+                {
                     isNewBestDisplayed = true;
                 }
 
@@ -741,15 +771,17 @@ namespace ScoreAttack
                         hasPlayedBest = true;
                     }
 
-                    if (ghostBeaten && playCustomSounds && ScoreAttackSaveData.Instance.ExtraSFXMode != SFXToggle.Default && ScoreAttackSaveData.Instance.ExtraSFXMode != SFXToggle.DefaultPlus && !hasPlayedGhostBeaten)
+                    if (ghostBeaten && playCustomSounds && ScoreAttackSaveData.Instance.ExtraSFXMode != SFXToggle.Default && ScoreAttackSaveData.Instance.ExtraSFXMode != SFXToggle.DefaultPlus && !hasPlayedGhostBeaten && ghostWasExternal)
                     {
                         player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerGhost, player.AudioManager.audioSources[3], 0f);
                         hasPlayedGhostBeaten = true;
+
+                        //Debug.LogWarning("[ScoreAttack] Ghost was beaten! (1)");
                     }
                 }
 
                 // Show Ghost Beaten if Ghost is Beaten
-                else if (ghostBeaten)
+                else if (ghostBeaten && ghostWasExternal)
                 {
                     gameplay.targetScoreLabel.text = "Ghost Beat!";
 
@@ -757,6 +789,8 @@ namespace ScoreAttack
                     {
                         player.AudioManager.PlayOneShotSfx(player.AudioManager.mixerGroups[3], announcerGhost, player.AudioManager.audioSources[3], 0f);
                         hasPlayedGhostBeaten = true;
+
+                        //Debug.LogWarning("[ScoreAttack] Ghost was beaten! (2)");
                     }
                 }
 
@@ -797,7 +831,6 @@ namespace ScoreAttack
             }
 
         }
-
 
         public void EndScoreAttack()
         {
@@ -863,8 +896,17 @@ namespace ScoreAttack
             countdownTimer = 0f;
             isCountdownFinished = false;
 
+            // Clear best info
+            isNewBestDisplayed = false;
+            hasPlayedBest = false;
+            hasPlayedGhostBeaten = false;
+
             // Turn off any UI related to the score attack
             TurnOffScoreUI();
+
+            //Clear External Ghost
+            ScoreAttackManager.ExternalGhostLoadedFromGhostList = false;
+            ScoreAttackManager.ExternalGhostScore = -1f;
 
             // Save personal best after updating
             //Core.Instance.SaveManager.SaveCurrentSaveSlot();
@@ -877,6 +919,8 @@ namespace ScoreAttack
         private void SavePB()
         {
             personalBestScore = ScoreGot;
+            isNewBestDisplayed = true;
+
             ScoreAttackSaveData.Instance.GetOrCreatePersonalBest(currentStage).SetPersonalBest(timeLimit, personalBestScore);
 
             if (GhostSaveData.Instance.GhostSaveMode != GhostSaveMode.Disabled)
@@ -1233,5 +1277,7 @@ namespace ScoreAttack
                     return;
             }
         }
+
+
     }
 }
