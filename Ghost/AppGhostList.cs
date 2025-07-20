@@ -224,6 +224,11 @@ namespace ScoreAttack
 
         private void LaunchScoreAttack(Ghost ghost, float timeLimit, float score, DateTime timestamp)
         {
+
+            // Clear any current ghost, just in case!
+            //ScoreAttackManager.LoadedExternalGhost = null;
+            //ScoreAttackManager.ExternalGhostLoadedFromGhostList = false; // check
+
             if (GhostSaveData.Instance.GhostDisplayMode == GhostDisplayMode.Hide)
             {
                 Core.Instance.UIManager.ShowNotification("Ghost display mode is set to <color=red>hide</color>.\nPlease enable it to use ghost playback during runs.");
@@ -324,7 +329,11 @@ namespace ScoreAttack
                 _ => stage.ToString().ToLowerInvariant()
             };
 
-            return cleanStageName.Replace("/", ".").Replace("\\", ".");
+            return cleanStageName
+            .Replace(@"/", ".")
+            .Replace(@"\", ".") // MapStation fix
+            .Replace("-", ".") // Replace hyphens with dots
+            .Replace("..", "."); // Replace double dot
         }
     }
 }

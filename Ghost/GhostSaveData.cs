@@ -587,7 +587,11 @@ namespace ScoreAttack
                 _ => stage.ToString().ToLowerInvariant() // fallback
             };
 
-            return cleanStageName.Replace(@"/", ".").Replace(@"\", "."); // Fix for Mapstation
+            return cleanStageName
+            .Replace(@"/", ".")
+            .Replace(@"\", ".") // MapStation fix
+            .Replace("-", ".") // Replace hyphens with dots
+            .Replace("..", "."); // Replace double dot
         }
 
         public string GetSaveLocation()

@@ -260,7 +260,11 @@ namespace ScoreAttack
                 _ => stage.ToString().ToLowerInvariant()
             };
 
-            return cleanStageName.Replace("/", ".").Replace("\\", ".");
+            return cleanStageName
+            .Replace(@"/", ".")
+            .Replace(@"\", ".") // MapStation fix
+            .Replace("-", ".") // Replace hyphens with dots
+            .Replace("..", "."); // Replace double dot
         }
     }
 }
