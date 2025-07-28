@@ -34,7 +34,7 @@ Rules are shared on the front page, as well as how to submit runs. Please note, 
 
 We also encourage you to join the rest of the score battlers in the [Slop Crew Discord](https://discord.gg/a2nVaZGGNz). We've got our own dedicated channel there!
 
-## Building
+# Building
 
 Before building the project, create a BRCPath environment variable on your system. The variable should point to the root directory of your Bomb Rush Cyberfunk installation. It’s used to locate the necessary DLLs (Assembly-CSharp.dll) during compilation.
 
