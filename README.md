@@ -36,7 +36,7 @@ We also encourage you to join the rest of the score battlers in the [Slop Crew D
 
 ## Building
 
-Before building the project, create a BRCPath environment variable on your system. The variable should point to the root directory of your Bomb Rush Cyberfunk installation. It’s used to locate the necessary DLLs (Assembly-CSharp.dll).
+Before building, create a `BRCPath` environment variable on your system. The variable should point to the root directory of your Bomb Rush Cyberfunk installation. It’s used to locate the necessary DLLs (Assembly-CSharp.dll).
 
 ## Credits/Special Thanks
 
