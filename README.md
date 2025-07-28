@@ -34,6 +34,10 @@ Rules are shared on the front page, as well as how to submit runs. Please note, 
 
 We also encourage you to join the rest of the score battlers in the [Slop Crew Discord](https://discord.gg/a2nVaZGGNz). We've got our own dedicated channel there!
 
+## Building
+
+Before building the project, create a BRCPath environment variable on your system. The variable should point to the root directory of your Bomb Rush Cyberfunk installation. It’s used to locate the necessary DLLs (Assembly-CSharp.dll) during compilation.
+
 # Credits/Special Thanks
 
 This plugin is built off [CommonAPI](https://github.com/LazyDuchess/BRC-CommonAPI) and [CommonAPI-Sample](https://github.com/LazyDuchess/BRC-CommonAPI-Sample). I take absolutely no credit for this work. Special thanks to goatgirl, NotNite, Yuri, Lazy Duchess, and SpecialFX for inspiration, programming, and testing. Extra extra special thanks to goatgirl and Lazy Duchess. This plugin would not exist without them. Thank you SO much for all your help with this project!!
