@@ -1,4 +1,4 @@
-## Score Attack Local Training
+# Score Attack Local Training
 
 This mod adds a Score Attack (Score Atk) menu to the phone that is useful for practicing Score Attack runs. You can now start a solo Score Attack Run anywhere, at any time, on any map. Additional QoL features and toggles are added, such as a stage select, boost refill, see your Personal Best, and more.
 
