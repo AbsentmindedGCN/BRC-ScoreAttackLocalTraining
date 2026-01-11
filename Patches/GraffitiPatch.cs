@@ -23,51 +23,7 @@ namespace ScoreAttack.Patches
         [HarmonyPatch(nameof(ScoreEncounter.UpdateMainEvent))]
         private static bool UpdateMainEvent_Prefix(ScoreEncounter __instance)
         {
-            // Clone Core.dt to a custom variable to prevent interference
-            //float customDeltaTime = Time.deltaTime;
-
-            // If you need to manipulate customDeltaTime, do it here
-            // For example, if you need to make time pass at a fixed rate, modify customDeltaTime
-
-            // Update the time limit with the custom delta time, bypassing IsBusyWithSequence()
-            __instance.timeLimitTimer -= customDeltaTime;
-            if (__instance.timeLimitTimer < 0f)
-            {
-                __instance.timeLimitTimer = 0f;
-            }
-
-            // Continue with the rest of the method logic
-            __instance.ScoreGot = __instance.player.score + __instance.player.baseScore * __instance.player.scoreMultiplier;
-
-            if (__instance.hasContestants)
-            {
-                __instance.UpdateContestants();
-            }
-
-            __instance.SetScoreUI();
-
-            if (__instance.ScoreGot >= (float)__instance.opponentsScore && !__instance.hasOpponents)
-            {
-                __instance.SetEncounterState(Encounter.EncounterState.MAIN_EVENT_SUCCES_DECAY);
-                return false; // Prevent the original method from running since we've already handled logic
-            }
-
-            if (__instance.timeLimitTimer > 0f)
-            {
-                //ScoreAttackEncounter.UpdateMainEvent();
-                var EncounterTemp = WorldHandler.instance.currentEncounter;
-                EncounterTemp.UpdateMainEvent();
-                return false; // Prevent original method from running if the timer is still ticking
-            }
-
-            if (__instance.ScoreGot >= (float)__instance.opponentsScore)
-            {
-                __instance.SetEncounterState(Encounter.EncounterState.MAIN_EVENT_SUCCES_DECAY);
-                return false; // Prevent the original method from running if success state is reached
-            }
-
-            __instance.SetEncounterState(Encounter.EncounterState.MAIN_EVENT_FAILED_DECAY);
-            return false; // Prevent original method from running since we've handled all state updates
+            return true;
         }
     }
 }
@@ -174,4 +130,4 @@ namespace ScoreAttack.Patches
             }
         }
     }
-} 
+}
