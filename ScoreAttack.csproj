@@ -3,8 +3,8 @@
   <PropertyGroup>
     <TargetFramework>net46</TargetFramework>
     <AssemblyName>ScoreAttackPlugin</AssemblyName>
-    <Description>My first plugin</Description>
-    <Version>1.0.0</Version>
+    <Description>BRC Score Attack Practice Plugin. Lets you start solo Score Attack runs from anywhere, without an opponent.</Description>
+    <Version>2.8.3</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>

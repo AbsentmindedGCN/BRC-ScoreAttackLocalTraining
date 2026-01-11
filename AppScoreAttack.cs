@@ -281,6 +281,7 @@ namespace ScoreAttack
                 {
                     // End the Score Battle
                     ScoreAttackEncounter scoreAttackActiveEncounter = FindObjectOfType<ScoreAttackEncounter>();
+                    scoreAttackActiveEncounter.isCancelling = true; // Skip Delay
                     scoreAttackActiveEncounter.EndScoreAttack();
 
                     //Save on ending..?
