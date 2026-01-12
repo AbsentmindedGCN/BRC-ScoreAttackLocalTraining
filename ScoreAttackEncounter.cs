@@ -35,7 +35,7 @@ namespace ScoreAttack
         // Add a field to store the personal best score for the current area
         private float personalBestScore = 0.0f;
         private float displayBestScore = 0.0f;
-        private float countdownTimer = 3.01f; // 3-second countdown
+        private float countdownTimer = 3.1f; // 3-second countdown
         private bool isCountdownFinished = false;
 
         private bool isNewBestDisplayed = false;
@@ -333,7 +333,7 @@ namespace ScoreAttack
 
             // Set the boolean flag to false to start the countdown
             isCountdownFinished = false;
-            countdownTimer = 3.01f; // Reset countdown timer
+            countdownTimer = 3.1f; // Reset countdown timer
 
             // Load personal best score for the current stage and time limit
             personalBestScore = ScoreAttackSaveData.Instance.GetOrCreatePersonalBest(currentStage).GetPersonalBest(timeLimit);
@@ -397,31 +397,49 @@ namespace ScoreAttack
             // COUNTDOWN PHASE
             if (!isCountdownFinished)
             {
+
+                bool sfxLoading = !announcerReady && ScoreAttackSaveData.Instance.ExtraSFXMode != SFXToggle.Default && ScoreAttackSaveData.Instance.ExtraSFXMode != SFXToggle.DefaultPlus;
+
+                if (sfxLoading)
+                {
+                    // Stay at the start of the timer until clips load
+                    countdownTimer = 3.1f;
+                }
+                else
+                {
+                    countdownTimer -= deltaTime;
+                }
+
+                /*
                 countdownTimer -= deltaTime;
+                */
 
                 // UI Update
                 GameplayUI gameplayUI = Core.Instance.UIManager.gameplay;
-                gameplayUI.timeLimitLabel.text = Mathf.CeilToInt(countdownTimer).ToString() + "...";
+                //gameplayUI.timeLimitLabel.text = Mathf.CeilToInt(countdownTimer).ToString() + "...";
+                int displaySeconds = Mathf.Clamp(Mathf.CeilToInt(countdownTimer), 1, 3);
+                gameplayUI.timeLimitLabel.text = displaySeconds.ToString() + "...";
 
                 // ANNOUNCER
                 int seconds = Mathf.CeilToInt(countdownTimer);
 
-                if (seconds >= 1 && seconds <= 3)
+                if (seconds >= 1 && seconds <= 4)
                 {
                     bool shouldPlayTick = false;
 
                     // Timer updated to 3.01f to make sure 3 is hit
-                    if (seconds == 3 && !hasPlayedThree)
+                    if (seconds <= 3.1f && !hasPlayedThree)
                     {
                         hasPlayedThree = true;
                         shouldPlayTick = true;
+                        seconds = 3; // Force the clip selection to 'three'
                     }
-                    else if (seconds == 2 && !hasPlayedTwo)
+                    else if (seconds <= 2.1f && !hasPlayedTwo)
                     {
                         hasPlayedTwo = true;
                         shouldPlayTick = true;
                     }
-                    else if (seconds == 1 && !hasPlayedOne)
+                    else if (seconds <= 1.1f && !hasPlayedOne)
                     {
                         hasPlayedOne = true;
                         shouldPlayTick = true;
