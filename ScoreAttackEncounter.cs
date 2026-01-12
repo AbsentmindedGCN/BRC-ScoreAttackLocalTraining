@@ -734,12 +734,12 @@ namespace ScoreAttack
 
             if (isCancelling)
             {
-                isCancelling = false;
                 TurnOffScoreUI();
                 TryEndGhostPlaybackIfActive();
-                SetEncounterState(Encounter.EncounterState.MAIN_EVENT_FAILED_DECAY);
+                isCancelling = false;
+                //SetEncounterState(Encounter.EncounterState.MAIN_EVENT_FAILED_DECAY);
             }
-            else if (naturalFinish)
+            else if (naturalFinish && !isCancelling)
             {
                 stateTimer = 0f;
             }
