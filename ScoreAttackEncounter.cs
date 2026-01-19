@@ -274,6 +274,7 @@ namespace ScoreAttack
         // Start Score Battle and Refresh the Stuff
         public override void StartMainEvent()
         {
+
             // Reset flags
             hasPlayedThree = false;
             hasPlayedTwo = false;
@@ -330,6 +331,9 @@ namespace ScoreAttack
 
             player.score = 0f;
             ScoreGot = 0f;
+
+            player.baseScore = 0f;
+            player.scoreMultiplier = 1f; // reset multi
 
             // Set the boolean flag to false to start the countdown
             isCountdownFinished = false;
@@ -466,6 +470,13 @@ namespace ScoreAttack
 
                 if (countdownTimer <= 0f)
                 {
+
+                    // FORCE RESET one last time the moment the game actually starts
+                    player.score = 0f;
+                    player.baseScore = 0f;
+                    player.scoreMultiplier = 1f;
+                    ScoreGot = 0f;
+
                     isCountdownFinished = true;
                     timeLimitTimer = timeLimit;
 
